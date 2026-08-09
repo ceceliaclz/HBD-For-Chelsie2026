@@ -1,0 +1,14 @@
+/* src/styles/global.css */
+:root {
+  --bg: #121826;
+  --card: rgba(28, 36, 54, 0.92);
+  --text: #f5f7fb;
+  --muted: rgba(245, 247, 251, 0.65);
+  --rabbit: #f5a0bf;
+  --dog: #8cc8ff;
+  --together: #ffd278;
+  --radius: 16px;
+  font-family: "Segoe UI", "PingFang SC", sans-serif;
+}
+html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(--text); }
+* { box-sizing: border-box; }
