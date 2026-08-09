@@ -1,3 +1,6 @@
+import citySeed from '../data/cities-seed.json'
+import countriesGeoJson from '../../public/geo/countries-110m.json'
+
 export interface CityHit {
   name: string
   countryCode: string
@@ -6,25 +9,45 @@ export interface CityHit {
   lng: number
 }
 
-// Kept synchronous for instant typeahead; public/data/cities-seed.json is the
-// portable seed asset used by importers and can be generated from this index.
-const cities: CityHit[] = [
-  { name: 'Tokyo', countryCode: 'JP', countryName: 'Japan', lat: 35.6762, lng: 139.6503 },
-  { name: 'Osaka', countryCode: 'JP', countryName: 'Japan', lat: 34.6937, lng: 135.5023 },
-  { name: 'Paris', countryCode: 'FR', countryName: 'France', lat: 48.8566, lng: 2.3522 },
-  { name: 'London', countryCode: 'GB', countryName: 'United Kingdom', lat: 51.5072, lng: -0.1276 },
-  { name: 'New York', countryCode: 'US', countryName: 'United States of America', lat: 40.7128, lng: -74.006 },
-  { name: 'Denpasar (Bali)', countryCode: 'ID', countryName: 'Indonesia', lat: -8.65, lng: 115.2167 },
-  { name: 'Seoul', countryCode: 'KR', countryName: 'South Korea', lat: 37.5665, lng: 126.978 },
-  { name: 'Bangkok', countryCode: 'TH', countryName: 'Thailand', lat: 13.7563, lng: 100.5018 },
-  { name: 'Singapore', countryCode: 'SG', countryName: 'Singapore', lat: 1.3521, lng: 103.8198 },
-  { name: 'Sydney', countryCode: 'AU', countryName: 'Australia', lat: -33.8688, lng: 151.2093 },
-  { name: 'Rome', countryCode: 'IT', countryName: 'Italy', lat: 41.9028, lng: 12.4964 },
-  { name: 'Barcelona', countryCode: 'ES', countryName: 'Spain', lat: 41.3874, lng: 2.1686 },
-  { name: 'Amsterdam', countryCode: 'NL', countryName: 'Netherlands', lat: 52.3676, lng: 4.9041 },
-  { name: 'Berlin', countryCode: 'DE', countryName: 'Germany', lat: 52.52, lng: 13.405 },
-  { name: 'Chiang Mai', countryCode: 'TH', countryName: 'Thailand', lat: 18.7883, lng: 98.9853 },
-]
+interface CountryProperties {
+  NAME?: string
+  ADMIN?: string
+  ISO_A2?: string
+  ISO_A2_EH?: string
+}
+
+interface CountryGeoJson {
+  features: Array<{ properties: CountryProperties }>
+}
+
+const countryProperties = (countriesGeoJson as CountryGeoJson).features
+
+const COUNTRY_NAMES = Object.fromEntries(
+  countryProperties.flatMap(({ properties }) => {
+    const code = properties.ISO_A2 !== '-99'
+      ? properties.ISO_A2
+      : properties.ISO_A2_EH
+    const name = properties.NAME ?? properties.ADMIN
+    return code && name ? [[code, name]] : []
+  }),
+) as Record<string, string>
+
+const COUNTRY_ENGLISH_ALIASES = Object.fromEntries(
+  countryProperties.flatMap(({ properties }) => {
+    const code = properties.ISO_A2 !== '-99'
+      ? properties.ISO_A2
+      : properties.ISO_A2_EH
+    const aliases = [properties.NAME, properties.ADMIN].filter(
+      (value): value is string => Boolean(value),
+    )
+    return code && aliases.length > 0 ? [[code, aliases]] : []
+  }),
+) as Record<string, string[]>
+
+const cities: CityHit[] = citySeed.map((city) => ({
+  ...city,
+  countryName: COUNTRY_NAMES[city.countryCode] ?? city.countryName,
+}))
 
 const COUNTRY_ALIASES: Record<string, string[]> = {
   AU: ['澳大利亚'],
@@ -60,6 +83,7 @@ export function searchCities(query: string, limit = 8): CityHit[] {
         hit.name,
         hit.countryName,
         hit.countryCode,
+        ...(COUNTRY_ENGLISH_ALIASES[hit.countryCode] ?? []),
         ...(COUNTRY_ALIASES[hit.countryCode] ?? []),
       ].map(normalize)
       const cityName = normalize(hit.name)

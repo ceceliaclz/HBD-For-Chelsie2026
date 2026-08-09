@@ -6,6 +6,18 @@ describe('searchCities', () => {
     expect(searchCities('tok').some((hit) => hit.name === 'Tokyo')).toBe(true)
   })
 
+  it('loads cities from the seed data', () => {
+    expect(searchCities('lisbon')).toEqual([
+      {
+        name: 'Lisbon',
+        countryCode: 'PT',
+        countryName: 'Portugal',
+        lat: 38.7223,
+        lng: -9.1393,
+      },
+    ])
+  })
+
   it('returns no results for an empty query', () => {
     expect(searchCities('')).toHaveLength(0)
   })
