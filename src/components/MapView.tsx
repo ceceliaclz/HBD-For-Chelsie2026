@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Map as MapLibreMap,
   NavigationControl,
@@ -13,6 +13,7 @@ import {
   countryFillExpression,
   dominantVisitorsByCountry,
 } from '../geo/countryLookup'
+import { CityMarkers } from './CityMarkers'
 
 const COUNTRY_SOURCE_ID = 'countries'
 const COUNTRY_FILL_LAYER_ID = 'visited-countries'
@@ -46,6 +47,7 @@ export function MapView({
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+  const [mapInstance, setMapInstance] = useState<MapLibreMap | null>(null)
   const fillExpressionRef = useRef<ExpressionSpecification>(
     countryFillExpression(dominantVisitorsByCountry(places, filter)),
   )
@@ -68,6 +70,7 @@ export function MapView({
       attributionControl: false,
     })
     mapRef.current = map
+    setMapInstance(map)
 
     map.addControl(
       new NavigationControl({ showCompass: false }),
@@ -151,11 +154,21 @@ export function MapView({
   }, [places, filter])
 
   return (
-    <div
-      ref={containerRef}
-      className="map-view"
-      data-marker-pack={markerPack}
-      aria-label="共同旅行地图"
-    />
+    <>
+      <div
+        ref={containerRef}
+        className="map-view"
+        data-marker-pack={markerPack}
+        aria-label="共同旅行地图"
+      />
+      {mapInstance && (
+        <CityMarkers
+          map={mapInstance}
+          places={places}
+          filter={filter}
+          markerPack={markerPack}
+        />
+      )}
+    </>
   )
 }

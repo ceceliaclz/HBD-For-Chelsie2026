@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { BottomCard } from '../components/BottomCard'
 import { MapView } from '../components/MapView'
 import type { MarkerPack, Place, Visitor } from '../domain/types'
 
@@ -9,9 +11,11 @@ export interface HomePageProps {
 
 export function HomePage({
   places = [],
-  filter = 'all',
+  filter: initialFilter = 'all',
   markerPack = 'stars',
 }: HomePageProps) {
+  const [filter, setFilter] = useState<Visitor | 'all'>(initialFilter)
+
   return (
     <main className="home-page">
       <MapView
@@ -21,6 +25,11 @@ export function HomePage({
         onLongPress={(lngLat) => {
           console.info('Map long press', lngLat)
         }}
+      />
+      <BottomCard
+        places={places}
+        filter={filter}
+        onFilterChange={setFilter}
       />
     </main>
   )

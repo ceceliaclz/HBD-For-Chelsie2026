@@ -63,6 +63,10 @@ describe('dominantVisitorsByCountry', () => {
 })
 
 describe('countryFillExpression', () => {
+  it('returns a valid transparent expression when no country is visited', () => {
+    expect(countryFillExpression(new Map())).toEqual(['rgba', 0, 0, 0, 0])
+  })
+
   it('matches either Natural Earth ISO property and uses role colors', () => {
     const expression = countryFillExpression(new Map([
       ['JP', 'rabbit'],

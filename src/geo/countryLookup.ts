@@ -57,6 +57,10 @@ export function dominantVisitorsByCountry(
 export function countryFillExpression(
   codesByVisitor: Map<string, Visitor>,
 ): ExpressionSpecification {
+  if (codesByVisitor.size === 0) {
+    return ['rgba', 0, 0, 0, 0]
+  }
+
   const expression: unknown[] = [
     'match',
     ['upcase', ['coalesce', ['get', 'ISO_A2'], ['get', 'iso_a2'], '']],
