@@ -12,3 +12,33 @@
 }
 html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(--text); }
 * { box-sizing: border-box; }
+
+.home-page,
+.map-view {
+  width: 100%;
+  height: 100%;
+}
+
+.map-view {
+  background: var(--bg);
+}
+
+.maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid rgba(245, 247, 251, 0.14);
+  border-radius: 12px;
+  background: rgba(28, 36, 54, 0.88);
+  box-shadow: 0 8px 24px rgba(3, 7, 18, 0.28);
+}
+
+.maplibregl-ctrl-group button {
+  background-color: transparent;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top-color: rgba(245, 247, 251, 0.12);
+}
+
+.maplibregl-ctrl-icon {
+  filter: invert(1) opacity(0.82);
+}

@@ -1,5 +1,7 @@
+import { HomePage } from './pages/HomePage'
+
 function App() {
-  return <h1>我们的地图</h1>
+  return <HomePage />
 }
 
 export default App
