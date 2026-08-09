@@ -30,6 +30,12 @@ interface PlaceRow {
   updated_at: string
 }
 
+interface SupabaseErrorLike {
+  code?: string
+  message?: string
+  details?: string
+}
+
 export class RoleTakenError extends Error {
   constructor(role: Role) {
     super(`Role "${role}" is already taken`)
@@ -82,6 +88,16 @@ function placeKey(place: Place): string {
   return `${place.placeType}:${place.countryCode}:${place.name}`
 }
 
+function isUniqueViolation(error: SupabaseErrorLike): boolean {
+  const text = `${error.message ?? ''} ${error.details ?? ''}`.toLowerCase()
+  return error.code === '23505' || text.includes('unique constraint') || text.includes('duplicate key')
+}
+
+function isRoleUniqueViolation(error: SupabaseErrorLike): boolean {
+  const text = `${error.message ?? ''} ${error.details ?? ''}`.toLowerCase()
+  return text.includes('members_book_id_role') || text.includes('(book_id, role)')
+}
+
 export function mergePlacesByUpdatedAt(
   localPlaces: Place[],
   remotePlaces: Place[],
@@ -122,7 +138,14 @@ export async function createBookRemote(input: {
     device_token: member.deviceToken,
     joined_at: member.joinedAt,
   })
-  if (memberError) throw memberError
+  if (memberError) {
+    try {
+      await supabase.from('couple_books').delete().eq('id', book.id)
+    } catch {
+      // Preserve the member insert error; orphan cleanup is best-effort.
+    }
+    throw memberError
+  }
 }
 
 export async function joinBookRemote(input: {
@@ -160,7 +183,24 @@ export async function joinBookRemote(input: {
     device_token: joiningMember.deviceToken,
     joined_at: joiningMember.joinedAt,
   })
-  if (insertError) throw insertError
+  if (insertError) {
+    if (isUniqueViolation(insertError)) {
+      const { data: latestMemberData, error: latestMembersError } = await supabase
+        .from('members')
+        .select('*')
+        .eq('book_id', bookRow.id)
+
+      if (!latestMembersError) {
+        const latestMembers = (latestMemberData as MemberRow[]).map(toMember)
+        const latestRoles = new Set(latestMembers.map((member) => member.role))
+        if (latestRoles.has('rabbit') && latestRoles.has('dog')) throw new BookFullError()
+        if (latestRoles.has(joiningMember.role)) throw new RoleTakenError(joiningMember.role)
+      }
+
+      if (isRoleUniqueViolation(insertError)) throw new RoleTakenError(joiningMember.role)
+    }
+    throw insertError
+  }
 
   return { book: toBook(bookRow), members: [...members, joiningMember] }
 }
@@ -204,8 +244,9 @@ export async function syncNow(): Promise<'ok' | 'offline' | 'no-book'> {
   if (!getSupabase()) return 'offline'
 
   const localPlaces = await listPlaces()
-  await pushDirtyPlaces(book.id, localPlaces)
   const remotePlaces = await pullPlaces(book.id)
-  await replaceAllPlaces(mergePlacesByUpdatedAt(localPlaces, remotePlaces))
+  const mergedPlaces = mergePlacesByUpdatedAt(localPlaces, remotePlaces)
+  await replaceAllPlaces(mergedPlaces)
+  await pushDirtyPlaces(book.id, mergedPlaces)
   return 'ok'
 }
