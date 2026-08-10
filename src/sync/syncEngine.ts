@@ -236,6 +236,18 @@ export async function pullPlaces(bookId: string): Promise<Place[]> {
   return (data as PlaceRow[]).map(toPlace)
 }
 
+export async function updateBookRemote(book: CoupleBook): Promise<boolean> {
+  const supabase = getSupabase()
+  if (!supabase) return false
+
+  const { error } = await supabase
+    .from('couple_books')
+    .update({ marker_pack: book.markerPack })
+    .eq('id', book.id)
+  if (error) throw error
+  return true
+}
+
 export async function syncNow(): Promise<'ok' | 'offline' | 'no-book'> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline'
 

@@ -1,5 +1,9 @@
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { Onboarding } from './components/Onboarding'
 import { HomePage } from './pages/HomePage'
+import { JoinPage } from './pages/JoinPage'
 import type { Place } from './domain/types'
+import { useBookStore } from './state/bookStore'
 
 const DEBUG_PLACES: Place[] = [
   {
@@ -37,13 +41,43 @@ const DEBUG_PLACES: Place[] = [
   },
 ]
 
-function App() {
-  const places =
-    import.meta.env.DEV && window.location.hash === '#debug'
-      ? DEBUG_PLACES
-      : undefined
+function RootPage() {
+  const debugPlaces = import.meta.env.DEV && window.location.hash === '#debug'
+    ? DEBUG_PLACES
+    : undefined
+  const {
+    book,
+    member,
+    places,
+    ready,
+    createBook,
+    setCurrentBook,
+  } = useBookStore()
 
-  return <HomePage places={places} />
+  if (debugPlaces) return <HomePage places={debugPlaces} />
+  if (!ready) return <main className="app-loading" aria-label="正在加载">✦</main>
+  if (!book || !member) return <Onboarding onCreate={createBook} />
+
+  return (
+    <HomePage
+      places={places}
+      book={book}
+      member={member}
+      markerPack={book.markerPack}
+      onBookChange={setCurrentBook}
+    />
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<RootPage />} />
+        <Route path="/join/:code?" element={<JoinPage />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App
