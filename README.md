@@ -55,6 +55,8 @@ npm run build
 npm run preview
 ```
 
+已知问题：Node.js 24 下启用 PWA 的生产构建偶尔会卡住；遇到时请终止后重试构建。
+
 可将 `dist/` 部署到任意 HTTPS 静态托管平台。部署前检查：
 
 - [ ] 在生产环境配置 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`

@@ -12,6 +12,19 @@ function normalizedCountryCode(countryCode: string): string {
   return countryCode.trim().toUpperCase()
 }
 
+function naturalEarthCountryCodeExpression(): unknown[] {
+  const primaryCode = ['coalesce', ['get', 'ISO_A2'], ['get', 'iso_a2'], '']
+  return [
+    'upcase',
+    [
+      'case',
+      ['==', primaryCode, '-99'],
+      ['coalesce', ['get', 'ISO_A2_EH'], ''],
+      primaryCode,
+    ],
+  ]
+}
+
 export function visitedCountryCodes(
   places: Place[],
   filter: Visitor | 'all',
@@ -63,7 +76,7 @@ export function countryFillExpression(
 
   const expression: unknown[] = [
     'match',
-    ['upcase', ['coalesce', ['get', 'ISO_A2'], ['get', 'iso_a2'], '']],
+    naturalEarthCountryCodeExpression(),
   ]
 
   for (const [code, visitor] of codesByVisitor) {

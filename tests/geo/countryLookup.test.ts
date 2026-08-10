@@ -6,6 +6,46 @@ import {
   visitedCountryCodes,
 } from '../../src/geo/countryLookup'
 
+type FeatureProperties = Record<string, string | undefined>
+
+function evaluateExpression(
+  expression: unknown,
+  properties: FeatureProperties,
+): unknown {
+  if (!Array.isArray(expression)) return expression
+
+  const [operator, ...args] = expression
+  if (operator === 'get') return properties[String(args[0])]
+  if (operator === 'coalesce') {
+    return args
+      .map((argument) => evaluateExpression(argument, properties))
+      .find((value) => value !== null && value !== undefined)
+  }
+  if (operator === 'upcase') {
+    return String(evaluateExpression(args[0], properties)).toUpperCase()
+  }
+  if (operator === '==') {
+    return evaluateExpression(args[0], properties)
+      === evaluateExpression(args[1], properties)
+  }
+  if (operator === 'case') {
+    return evaluateExpression(args[0], properties)
+      ? evaluateExpression(args[1], properties)
+      : evaluateExpression(args[2], properties)
+  }
+  if (operator === 'match') {
+    const input = evaluateExpression(args[0], properties)
+    for (let index = 1; index < args.length - 1; index += 2) {
+      if (input === evaluateExpression(args[index], properties)) {
+        return evaluateExpression(args[index + 1], properties)
+      }
+    }
+    return evaluateExpression(args.at(-1), properties)
+  }
+
+  throw new Error(`Unsupported expression operator: ${String(operator)}`)
+}
+
 function place(countryCode: string, visitor: Visitor): Place {
   return {
     id: `${countryCode}-${visitor}`,
@@ -67,23 +107,20 @@ describe('countryFillExpression', () => {
     expect(countryFillExpression(new Map())).toEqual(['rgba', 0, 0, 0, 0])
   })
 
-  it('matches either Natural Earth ISO property and uses role colors', () => {
+  it('colors countries using real Natural Earth feature properties', () => {
     const expression = countryFillExpression(new Map([
       ['JP', 'rabbit'],
       ['ID', 'dog'],
       ['FR', 'together'],
     ]))
 
-    expect(expression).toEqual([
-      'match',
-      ['upcase', ['coalesce', ['get', 'ISO_A2'], ['get', 'iso_a2'], '']],
-      'JP',
-      '#F5A0BF',
-      'ID',
-      '#8CC8FF',
-      'FR',
-      '#FFD278',
-      'rgba(0, 0, 0, 0)',
-    ])
+    expect(evaluateExpression(expression, { ISO_A2: 'JP' })).toBe('#F5A0BF')
+    expect(evaluateExpression(expression, { iso_a2: 'id' })).toBe('#8CC8FF')
+    expect(evaluateExpression(expression, {
+      ISO_A2: '-99',
+      ISO_A2_EH: 'FR',
+    })).toBe('#FFD278')
+    expect(evaluateExpression(expression, { ISO_A2: 'NO' }))
+      .toBe('rgba(0, 0, 0, 0)')
   })
 })

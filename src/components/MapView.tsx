@@ -139,6 +139,7 @@ export function MapView({
       cancelLongPress()
       map.remove()
       mapRef.current = null
+      setMapInstance(null)
     }
   }, [])
 
