@@ -33,4 +33,35 @@ describe('AddPlaceSheet', () => {
     })
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('prefills and submits a country from a map long-press', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined)
+    render(
+      <AddPlaceSheet
+        open
+        defaultVisitor="together"
+        initialPlace={{
+          placeType: 'country',
+          name: 'France',
+          countryCode: 'FR',
+          countryName: 'France',
+          lat: 46.5,
+          lng: 2.5,
+        }}
+        onClose={() => undefined}
+        onSubmit={onSubmit}
+      />,
+    )
+
+    expect(screen.getByRole('searchbox')).toHaveValue('France')
+    fireEvent.click(screen.getByRole('button', { name: '点亮' }))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ placeType: 'country', countryCode: 'FR' }),
+        'together',
+        undefined,
+      )
+    })
+  })
 })

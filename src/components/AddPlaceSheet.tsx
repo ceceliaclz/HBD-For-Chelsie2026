@@ -12,30 +12,40 @@ export interface AddPlaceSheetProps {
   open: boolean
   onClose(): void
   defaultVisitor: Visitor
-  onSubmit(hit: CityHit, visitor: Visitor, visitedOn?: string): Promise<void>
+  initialPlace?: PlaceSelection | null
+  onSubmit(hit: PlaceSelection, visitor: Visitor, visitedOn?: string): Promise<void>
+}
+
+export interface PlaceSelection extends CityHit {
+  placeType: 'country' | 'city'
 }
 
 export function AddPlaceSheet({
   open,
   onClose,
   defaultVisitor,
+  initialPlace,
   onSubmit,
 }: AddPlaceSheetProps) {
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<CityHit | null>(null)
+  const [selected, setSelected] = useState<PlaceSelection | null>(null)
   const [visitor, setVisitor] = useState<Visitor>(defaultVisitor)
   const [visitedOn, setVisitedOn] = useState('')
   const [saving, setSaving] = useState(false)
   const results = searchCities(query)
+  const selectedMatchesResults = selected?.placeType === 'city'
+    && results.some((hit) => (
+      hit.name === selected.name && hit.countryCode === selected.countryCode
+    ))
 
   useEffect(() => {
     if (!open) return
-    setQuery('')
-    setSelected(null)
+    setQuery(initialPlace?.name ?? '')
+    setSelected(initialPlace ?? null)
     setVisitor(defaultVisitor)
     setVisitedOn('')
     setSaving(false)
-  }, [open, defaultVisitor])
+  }, [open, defaultVisitor, initialPlace])
 
   if (!open) return null
 
@@ -89,17 +99,39 @@ export function AddPlaceSheet({
             {query && results.length === 0 && (
               <p className="city-results__empty">还没有找到这座城</p>
             )}
+            {selected && !selectedMatchesResults && (
+              <button
+                type="button"
+                className="city-result"
+                aria-pressed="true"
+                onClick={() => setSelected(selected)}
+              >
+                <span className="city-result__pin">✦</span>
+                <span><strong>{selected.name}</strong><small>{selected.countryName}</small></span>
+                <span aria-hidden="true">✓</span>
+              </button>
+            )}
             {results.map((hit) => (
               <button
                 type="button"
                 key={`${hit.countryCode}-${hit.name}`}
                 className="city-result"
-                aria-pressed={selected === hit}
-                onClick={() => setSelected(hit)}
+                aria-pressed={
+                  selected?.placeType === 'city'
+                  && selected.name === hit.name
+                  && selected.countryCode === hit.countryCode
+                }
+                onClick={() => setSelected({ ...hit, placeType: 'city' })}
               >
                 <span className="city-result__pin">✦</span>
                 <span><strong>{hit.name}</strong><small>{hit.countryName}</small></span>
-                <span aria-hidden="true">{selected === hit ? '✓' : '›'}</span>
+                <span aria-hidden="true">{
+                  selected?.placeType === 'city'
+                  && selected.name === hit.name
+                  && selected.countryCode === hit.countryCode
+                    ? '✓'
+                    : '›'
+                }</span>
               </button>
             ))}
           </div>

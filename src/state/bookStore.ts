@@ -31,8 +31,8 @@ export function useBookStore(initialPlaces?: Place[]) {
     }
   }, [initialPlaces])
 
-  const addCity = useCallback(async (
-    hit: CityHit,
+  const addPlace = useCallback(async (
+    hit: CityHit & { placeType: Place['placeType'] },
     visitor: Visitor,
     visitedOn?: string,
   ) => {
@@ -40,7 +40,7 @@ export function useBookStore(initialPlaces?: Place[]) {
     await upsertPlace({
       id: newId(),
       bookId: book?.id ?? DEV_BOOK_ID,
-      placeType: 'city',
+      placeType: hit.placeType,
       name: hit.name,
       countryCode: hit.countryCode,
       lat: hit.lat,
@@ -52,5 +52,5 @@ export function useBookStore(initialPlaces?: Place[]) {
     setPlaces(await listPlaces())
   }, [])
 
-  return { places, ready, addCity }
+  return { places, ready, addPlace }
 }

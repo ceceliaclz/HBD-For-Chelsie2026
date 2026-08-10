@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { AddPlaceSheet } from '../components/AddPlaceSheet'
+import {
+  AddPlaceSheet,
+  type PlaceSelection,
+} from '../components/AddPlaceSheet'
 import { BottomCard } from '../components/BottomCard'
 import { MapView } from '../components/MapView'
 import type { MarkerPack, Place, Visitor } from '../domain/types'
+import { approxPlaceFromLngLat } from '../geo/reverseApprox'
 import { useBookStore } from '../state/bookStore'
 import { syncNow } from '../sync/syncEngine'
 
@@ -19,7 +23,8 @@ export function HomePage({
 }: HomePageProps) {
   const [filter, setFilter] = useState<Visitor | 'all'>(initialFilter)
   const [addPlaceOpen, setAddPlaceOpen] = useState(false)
-  const { places, addCity } = useBookStore(initialPlaces)
+  const [initialPlace, setInitialPlace] = useState<PlaceSelection | null>(null)
+  const { places, addPlace } = useBookStore(initialPlaces)
 
   return (
     <main className="home-page">
@@ -27,12 +32,27 @@ export function HomePage({
         places={places}
         filter={filter}
         markerPack={markerPack}
-        onLongPress={() => setAddPlaceOpen(true)}
+        onLongPress={(lngLat) => {
+          const approximate = approxPlaceFromLngLat(lngLat)
+          setInitialPlace(approximate.nearestCity
+            ? { ...approximate.nearestCity, placeType: 'city' }
+            : {
+                placeType: 'country',
+                name: approximate.countryName,
+                countryCode: approximate.countryCode,
+                countryName: approximate.countryName,
+                ...lngLat,
+              })
+          setAddPlaceOpen(true)
+        }}
       />
       <button
         type="button"
         className="add-place-fab"
-        onClick={() => setAddPlaceOpen(true)}
+        onClick={() => {
+          setInitialPlace(null)
+          setAddPlaceOpen(true)
+        }}
       >
         <span aria-hidden="true">＋</span>
         点亮新地方
@@ -45,9 +65,10 @@ export function HomePage({
       <AddPlaceSheet
         open={addPlaceOpen}
         defaultVisitor="together"
+        initialPlace={initialPlace}
         onClose={() => setAddPlaceOpen(false)}
         onSubmit={async (hit, visitor, visitedOn) => {
-          await addCity(hit, visitor, visitedOn)
+          await addPlace(hit, visitor, visitedOn)
           try {
             await syncNow()
           } catch {
