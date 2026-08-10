@@ -31,7 +31,16 @@ export function SettingsSheet({
   const shareUrl = `${window.location.origin}/join/${book.inviteCode}`
   const cloudConfigured = getSupabase() !== null
 
-  const copyInvite = async () => {
+  const copyInviteCode = async () => {
+    try {
+      await navigator.clipboard.writeText(book.inviteCode)
+      setMessage('邀请码已复制')
+    } catch {
+      setMessage('复制失败，请手动复制邀请码')
+    }
+  }
+
+  const copyInviteLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl)
       setMessage('邀请链接已复制')
@@ -82,7 +91,14 @@ export function SettingsSheet({
             <button
               type="button"
               disabled={!cloudConfigured}
-              onClick={() => void copyInvite()}
+              onClick={() => void copyInviteCode()}
+            >
+              复制邀请码
+            </button>
+            <button
+              type="button"
+              disabled={!cloudConfigured}
+              onClick={() => void copyInviteLink()}
             >
               复制邀请链接
             </button>

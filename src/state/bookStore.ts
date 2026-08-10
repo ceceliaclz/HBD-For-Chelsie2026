@@ -18,16 +18,13 @@ import {
   joinBookRemote,
   pullPlaces,
 } from '../sync/syncEngine'
+import { getSupabase } from '../sync/supabaseClient'
 
 const DEV_BOOK_ID = 'local-dev-book'
 
 export interface BookSession {
   book: CoupleBook
   member: Member
-}
-
-function isCloudNotConfigured(error: unknown): boolean {
-  return error instanceof Error && error.message === 'Supabase is not configured'
 }
 
 export async function createCoupleBook(role: Role): Promise<BookSession> {
@@ -46,13 +43,11 @@ export async function createCoupleBook(role: Role): Promise<BookSession> {
     joinedAt: now,
   }
 
+  if (getSupabase()) {
+    await createBookRemote({ book, member })
+  }
   await saveBook(book)
   await saveMember(member)
-  try {
-    await createBookRemote({ book, member })
-  } catch (error) {
-    if (!isCloudNotConfigured(error)) throw error
-  }
   return { book, member }
 }
 
@@ -69,11 +64,15 @@ export async function joinCoupleBook(code: string, role: Role): Promise<BookSess
     member,
   })
   const joinedMember = { ...member, bookId: book.id }
-  const places = await pullPlaces(book.id)
 
   await saveBook(book)
   await saveMember(joinedMember)
-  await replaceAllPlaces(places)
+  try {
+    const places = await pullPlaces(book.id)
+    await replaceAllPlaces(places)
+  } catch {
+    // Joining already succeeded remotely and locally; places can sync later.
+  }
   return { book, member: joinedMember }
 }
 
