@@ -16,6 +16,7 @@ import {
   createBookRemote,
   joinBookRemote,
   pullPlaces,
+  syncNow,
 } from '../sync/syncEngine'
 import { getSupabase } from '../sync/supabaseClient'
 
@@ -24,6 +25,12 @@ const DEV_BOOK_ID = 'local-dev-book'
 export interface BookSession {
   book: CoupleBook
   member: Member
+}
+
+export type SyncStatus = 'synced' | 'offline' | 'failed'
+
+interface BookStoreOptions {
+  syncLifecycle?: boolean
 }
 
 export async function createCoupleBook(role: Role): Promise<BookSession> {
@@ -73,11 +80,14 @@ export async function joinCoupleBook(code: string, role: Role): Promise<BookSess
   return { book, member: joinedMember }
 }
 
-export function useBookStore(initialPlaces?: Place[]) {
+export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions = {}) {
   const [places, setPlaces] = useState<Place[]>(initialPlaces ?? [])
   const [book, setBook] = useState<CoupleBook | null>(null)
   const [member, setMember] = useState<Member | null>(null)
   const [ready, setReady] = useState(initialPlaces !== undefined)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
+    typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'synced',
+  )
 
   useEffect(() => {
     let active = true
@@ -102,6 +112,35 @@ export function useBookStore(initialPlaces?: Place[]) {
     }
   }, [initialPlaces])
 
+  const runSync = useCallback(async () => {
+    try {
+      const result = await syncNow()
+      setSyncStatus(result === 'ok' ? 'synced' : 'offline')
+      if (result === 'ok') setPlaces(await listPlaces())
+      return result
+    } catch {
+      setSyncStatus('failed')
+      return 'failed' as const
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!options.syncLifecycle) return
+
+    const syncWhenFocused = () => {
+      void runSync()
+    }
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void runSync()
+    }, 30_000)
+
+    window.addEventListener('focus', syncWhenFocused)
+    return () => {
+      window.removeEventListener('focus', syncWhenFocused)
+      window.clearInterval(intervalId)
+    }
+  }, [options.syncLifecycle, runSync])
+
   const addPlace = useCallback(async (
     hit: CityHit & { placeType: Place['placeType'] },
     visitor: Visitor,
@@ -121,7 +160,8 @@ export function useBookStore(initialPlaces?: Place[]) {
       updatedAt: new Date().toISOString(),
     })
     setPlaces(await listPlaces())
-  }, [])
+    await runSync()
+  }, [runSync])
 
   const createBook = useCallback(async (role: Role) => {
     const session = await createCoupleBook(role)
@@ -147,6 +187,7 @@ export function useBookStore(initialPlaces?: Place[]) {
     member,
     places,
     ready,
+    syncStatus,
     addPlace,
     createBook,
     joinBook,

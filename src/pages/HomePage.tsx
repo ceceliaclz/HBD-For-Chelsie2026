@@ -9,7 +9,6 @@ import { SettingsSheet } from '../components/SettingsSheet'
 import type { CoupleBook, MarkerPack, Member, Place, Visitor } from '../domain/types'
 import { approxPlaceFromLngLat } from '../geo/reverseApprox'
 import { useBookStore } from '../state/bookStore'
-import { syncNow } from '../sync/syncEngine'
 
 export interface HomePageProps {
   places?: Place[]
@@ -32,8 +31,15 @@ export function HomePage({
   const [addPlaceOpen, setAddPlaceOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [initialPlace, setInitialPlace] = useState<PlaceSelection | null>(null)
-  const { places, addPlace } = useBookStore(initialPlaces)
+  const { places, addPlace, syncStatus } = useBookStore(initialPlaces, {
+    syncLifecycle: true,
+  })
   const markerPack = book?.markerPack ?? initialMarkerPack
+  const syncStatusText = {
+    synced: '已同步',
+    offline: '离线 · 本地已保存',
+    failed: '同步失败',
+  }[syncStatus]
 
   return (
     <main className="home-page">
@@ -85,6 +91,13 @@ export function HomePage({
         <span aria-hidden="true">＋</span>
         点亮新地方
       </button>
+      <div
+        className={`sync-status sync-status--${syncStatus}`}
+        role="status"
+        aria-live="polite"
+      >
+        {syncStatusText}
+      </div>
       <BottomCard
         places={places}
         filter={filter}
@@ -97,11 +110,6 @@ export function HomePage({
         onClose={() => setAddPlaceOpen(false)}
         onSubmit={async (hit, visitor, visitedOn) => {
           await addPlace(hit, visitor, visitedOn)
-          try {
-            await syncNow()
-          } catch {
-            // The local visit is already durable; remote sync can retry later.
-          }
         }}
       />
     </main>

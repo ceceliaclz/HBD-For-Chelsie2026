@@ -208,6 +208,22 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   font-size: 20px;
 }
 
+.sync-status {
+  position: absolute;
+  z-index: 3;
+  right: 24px;
+  bottom: 216px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 0 1px 6px rgba(4, 9, 20, 0.8);
+}
+
+.sync-status--offline,
+.sync-status--failed {
+  color: #ffd278;
+}
+
 .add-place-backdrop {
   position: fixed;
   z-index: 20;
