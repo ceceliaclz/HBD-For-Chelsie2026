@@ -1,6 +1,14 @@
 import 'fake-indexeddb/auto'
 import { describe, it, expect, beforeEach } from 'vitest'
-import { clearAll, upsertPlace, listPlaces, saveBook } from '../../src/storage/localDb'
+import {
+  clearAll,
+  listPlaces,
+  loadBook,
+  loadMember,
+  saveBook,
+  saveSession,
+  upsertPlace,
+} from '../../src/storage/localDb'
 
 beforeEach(async () => {
   await clearAll()
@@ -9,6 +17,29 @@ beforeEach(async () => {
     inviteCode: 'MAP7YK',
     markerPack: 'stars',
     createdAt: '2026-01-01T00:00:00.000Z',
+  })
+})
+
+describe('saveSession', () => {
+  it('writes the book and member together', async () => {
+    const book = {
+      id: 'book-session',
+      inviteCode: 'PAIR42',
+      markerPack: 'stars' as const,
+      createdAt: '2026-08-10T00:00:00.000Z',
+    }
+    const member = {
+      id: 'member-session',
+      bookId: book.id,
+      role: 'rabbit' as const,
+      deviceToken: 'device-session',
+      joinedAt: '2026-08-10T00:00:00.000Z',
+    }
+
+    await saveSession(book, member)
+
+    expect(await loadBook()).toEqual(book)
+    expect(await loadMember()).toEqual(member)
   })
 })
 

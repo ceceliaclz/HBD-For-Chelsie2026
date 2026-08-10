@@ -9,8 +9,7 @@ import {
   loadBook,
   loadMember,
   replaceAllPlaces,
-  saveBook,
-  saveMember,
+  saveSession,
   upsertPlace,
 } from '../storage/localDb'
 import {
@@ -46,8 +45,7 @@ export async function createCoupleBook(role: Role): Promise<BookSession> {
   if (getSupabase()) {
     await createBookRemote({ book, member })
   }
-  await saveBook(book)
-  await saveMember(member)
+  await saveSession(book, member)
   return { book, member }
 }
 
@@ -65,8 +63,7 @@ export async function joinCoupleBook(code: string, role: Role): Promise<BookSess
   })
   const joinedMember = { ...member, bookId: book.id }
 
-  await saveBook(book)
-  await saveMember(joinedMember)
+  await saveSession(book, joinedMember)
   try {
     const places = await pullPlaces(book.id)
     await replaceAllPlaces(places)

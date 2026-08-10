@@ -57,6 +57,16 @@ export async function saveMember(member: Member): Promise<void> {
   await db.put('meta', member, META_KEYS.member)
 }
 
+export async function saveSession(book: CoupleBook, member: Member): Promise<void> {
+  const db = await getDb()
+  const tx = db.transaction('meta', 'readwrite')
+  await Promise.all([
+    tx.store.put(book, META_KEYS.book),
+    tx.store.put(member, META_KEYS.member),
+    tx.done,
+  ])
+}
+
 export async function loadMember(): Promise<Member | null> {
   const db = await getDb()
   const member = (await db.get('meta', META_KEYS.member)) as Member | undefined
