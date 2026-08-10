@@ -143,6 +143,13 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   font-size: 17px;
 }
 
+.bottom-card__empty {
+  margin: -2px 0 14px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
 .filter-chips {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -661,7 +668,7 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 }
 
 .primary-action:disabled { opacity: 0.38; box-shadow: none; cursor: not-allowed; }
-.form-error { margin: 0; color: #ff9fa6; font-size: 12px; text-align: center; }
+.form-error { margin: 0 0 12px; color: #ff9fa6; font-size: 12px; text-align: center; }
 
 .join-page {
   display: grid;

@@ -40,6 +40,12 @@ export function BottomCard({
         <span><strong>{stats.togetherCount}</strong> 次一起</span>
       </div>
 
+      {places.length === 0 && (
+        <p className="bottom-card__empty">
+          还没有足迹。搜索或长按地图，点亮你们的第一个地方。
+        </p>
+      )}
+
       <div className="filter-chips" aria-label="按旅行成员筛选">
         {FILTERS.map((item) => (
           <button

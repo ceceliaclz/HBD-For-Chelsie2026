@@ -32,6 +32,7 @@ export function AddPlaceSheet({
   const [visitor, setVisitor] = useState<Visitor>(defaultVisitor)
   const [visitedOn, setVisitedOn] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const results = searchCities(query)
   const selectedMatchesResults = selected?.placeType === 'city'
     && results.some((hit) => (
@@ -45,6 +46,7 @@ export function AddPlaceSheet({
     setVisitor(defaultVisitor)
     setVisitedOn('')
     setSaving(false)
+    setSaveError('')
   }, [open, defaultVisitor, initialPlace])
 
   if (!open) return null
@@ -53,9 +55,12 @@ export function AddPlaceSheet({
     event.preventDefault()
     if (!selected || saving) return
     setSaving(true)
+    setSaveError('')
     try {
       await onSubmit(selected, visitor, visitedOn || undefined)
       onClose()
+    } catch {
+      setSaveError('这次没能点亮，请检查网络后再试')
     } finally {
       setSaving(false)
     }
@@ -97,7 +102,9 @@ export function AddPlaceSheet({
 
           <div className="city-results" aria-label="城市搜索结果">
             {query && results.length === 0 && (
-              <p className="city-results__empty">还没有找到这座城</p>
+              <p className="city-results__empty">
+                没找到这个地点，试试城市名或国家名
+              </p>
             )}
             {selected && !selectedMatchesResults && (
               <button
@@ -163,6 +170,7 @@ export function AddPlaceSheet({
             />
           </label>
 
+          {saveError && <p className="form-error" role="alert">{saveError}</p>}
           <button className="light-place-button" type="submit" disabled={!selected || saving}>
             <span aria-hidden="true">✦</span>{saving ? '正在点亮…' : '点亮'}
           </button>

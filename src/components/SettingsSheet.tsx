@@ -45,7 +45,7 @@ export function SettingsSheet({
       await navigator.clipboard.writeText(shareUrl)
       setMessage('邀请链接已复制')
     } catch {
-      setMessage('复制失败，请手动复制邀请码')
+      setMessage('复制失败，请手动复制下方链接')
     }
   }
 
@@ -104,7 +104,7 @@ export function SettingsSheet({
             </button>
           </div>
           <small>
-            {cloudConfigured ? shareUrl : '未配置云同步，邀请功能暂不可用'}
+            {cloudConfigured ? shareUrl : '这张地图仅保存在本机，配置云同步后才能邀请'}
           </small>
         </div>
 

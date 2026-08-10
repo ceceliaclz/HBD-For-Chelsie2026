@@ -20,7 +20,7 @@ export function Onboarding({ onCreate }: OnboardingProps) {
     try {
       await onCreate(role)
     } catch {
-      setError('创建失败，请稍后再试')
+      setError('地图暂时没创建成功，请检查网络后重试')
       setCreating(false)
     }
   }
