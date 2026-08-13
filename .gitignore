@@ -7,3 +7,4 @@ dist/
 .DS_Store
 .worktrees/
 .deploy-gh-pages/
+.deploy-gh-pages-new/
