@@ -8,6 +8,8 @@
   --dog: #8cc8ff;
   --together: #ffd278;
   --radius: 16px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
   font-family: "Segoe UI", "PingFang SC", sans-serif;
 }
 html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(--text); }
@@ -21,7 +23,8 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 
 .home-page {
   position: relative;
-  overflow: hidden;
+  /* Allow marker labels near the top edge to remain visible under the notch. */
+  overflow: clip;
 }
 
 .map-view {
@@ -29,46 +32,59 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 }
 
 .city-marker {
-  --marker-color: var(--together);
+  --marker-color: #f5a0bf;
+  position: relative;
+  z-index: 2;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-width: 34px;
-  min-height: 34px;
-  padding: 4px 9px 4px 5px;
-  border: 1px solid color-mix(in srgb, var(--marker-color) 78%, white);
-  border-radius: 999px;
-  color: #172033;
-  background: color-mix(in srgb, var(--marker-color) 88%, white);
-  box-shadow: 0 6px 14px rgba(2, 8, 23, 0.34);
-  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--marker-color) 72%, transparent));
+  gap: 3px;
+  padding: 8px 10px 2px;
+  overflow: visible;
   transform-origin: 50% 100%;
   animation: marker-arrive 280ms ease-out both;
+  pointer-events: none;
 }
 
-.city-marker--together {
+.city-marker--heart {
   filter:
-    drop-shadow(0 0 7px rgba(255, 210, 120, 0.9))
-    drop-shadow(0 0 14px rgba(255, 210, 120, 0.42));
+    drop-shadow(0 0 10px rgba(245, 160, 191, 0.95))
+    drop-shadow(0 6px 14px rgba(2, 8, 23, 0.5));
+}
+
+.city-marker__heart {
+  display: grid;
+  width: 44px;
+  height: 42px;
+  place-items: center;
+  overflow: visible;
+}
+
+.city-marker__heart-svg {
+  display: block;
+  width: 40px;
+  height: 38px;
+  overflow: visible;
 }
 
 .city-marker__glyph {
-  display: grid;
-  width: 24px;
-  height: 24px;
-  place-items: center;
-  font-size: 17px;
-  line-height: 1;
+  display: none;
 }
 
 .city-marker__label {
-  max-width: 90px;
+  max-width: 110px;
+  padding: 3px 8px;
   overflow: hidden;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
+  border: 1px solid rgba(245, 160, 191, 0.55);
+  border-radius: 999px;
+  color: #fff5f8;
+  background: rgba(18, 24, 38, 0.82);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(2, 8, 23, 0.35);
 }
 
 .bottom-card {
@@ -460,12 +476,34 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   .add-place-backdrop, .add-place-sheet { animation: none; }
 }
 
+.maplibregl-ctrl-bottom-right {
+  right: 12px;
+  bottom: max(250px, calc(220px + var(--safe-bottom)));
+}
+
 .maplibregl-ctrl-group {
   overflow: hidden;
   border: 1px solid rgba(245, 247, 251, 0.14);
   border-radius: 12px;
   background: rgba(28, 36, 54, 0.88);
   box-shadow: 0 8px 24px rgba(3, 7, 18, 0.28);
+}
+
+/* Keep city pins above the country wash; don't clip heart stroke/glow. */
+.home-page .maplibregl-marker {
+  z-index: 3;
+  overflow: visible !important;
+}
+
+.home-page .maplibregl-marker .city-marker,
+.home-page .maplibregl-marker .city-marker__heart,
+.home-page .maplibregl-marker .city-marker__heart-svg {
+  overflow: visible;
+}
+
+.map-view .maplibregl-canvas-container,
+.map-view .maplibregl-marker-container {
+  overflow: visible !important;
 }
 
 .maplibregl-ctrl-group button {
@@ -709,11 +747,16 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 .join-panel .role-picker { margin-bottom: 20px; }
 .join-panel .form-error { margin-bottom: 12px; }
 
-.settings-button {
+.home-top-actions {
   position: absolute;
   z-index: 4;
   top: max(16px, env(safe-area-inset-top));
   right: 16px;
+  display: flex;
+  gap: 10px;
+}
+
+.icon-button {
   width: 44px;
   height: 44px;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -724,6 +767,27 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   font-size: 18px;
   cursor: pointer;
   backdrop-filter: blur(12px);
+}
+
+.icon-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.capture-toast {
+  position: absolute;
+  z-index: 6;
+  top: calc(max(16px, env(safe-area-inset-top)) + 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 210, 120, 0.28);
+  border-radius: 999px;
+  color: #fff7df;
+  background: rgba(18, 24, 38, 0.9);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .settings-sheet {

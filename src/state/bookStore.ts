@@ -151,7 +151,8 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
       id: newId(),
       bookId: book?.id ?? DEV_BOOK_ID,
       placeType: hit.placeType,
-      name: hit.name,
+      // Prefer Chinese label on the map when available.
+      name: hit.nameZh ?? hit.name,
       countryCode: hit.countryCode,
       lat: hit.lat,
       lng: hit.lng,

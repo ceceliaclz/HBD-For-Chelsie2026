@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { Map as MapLibreMap } from 'maplibre-gl'
 import {
   AddPlaceSheet,
   type PlaceSelection,
@@ -8,6 +9,11 @@ import { MapView } from '../components/MapView'
 import { SettingsSheet } from '../components/SettingsSheet'
 import type { CoupleBook, MarkerPack, Member, Place, Visitor } from '../domain/types'
 import { approxPlaceFromLngLat } from '../geo/reverseApprox'
+import {
+  captureMemoryCard,
+  formatCardDate,
+  saveMemoryCard,
+} from '../lib/captureMemoryCard'
 import { useBookStore } from '../state/bookStore'
 
 export interface HomePageProps {
@@ -31,6 +37,9 @@ export function HomePage({
   const [addPlaceOpen, setAddPlaceOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [initialPlace, setInitialPlace] = useState<PlaceSelection | null>(null)
+  const [capturing, setCapturing] = useState(false)
+  const [captureMessage, setCaptureMessage] = useState('')
+  const mapRef = useRef<MapLibreMap | null>(null)
   const { places, addPlace, syncStatus } = useBookStore(initialPlaces, {
     syncLifecycle: true,
   })
@@ -41,12 +50,34 @@ export function HomePage({
     failed: '同步遇到问题 · 足迹仍在本机',
   }[syncStatus]
 
+  async function handleCapture() {
+    const map = mapRef.current
+    if (!map || capturing) return
+    setCapturing(true)
+    setCaptureMessage('正在生成纪念卡…')
+    try {
+      const blob = await captureMemoryCard({ map, places })
+      const filename = `我们的地图-${formatCardDate().replaceAll('.', '')}.png`
+      await saveMemoryCard(blob, filename)
+      setCaptureMessage('已保存纪念卡')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '截图失败'
+      setCaptureMessage(message)
+    } finally {
+      setCapturing(false)
+      window.setTimeout(() => setCaptureMessage(''), 2200)
+    }
+  }
+
   return (
     <main className="home-page">
       <MapView
         places={places}
         filter={filter}
         markerPack={markerPack}
+        onMapReady={(map) => {
+          mapRef.current = map
+        }}
         onLongPress={(lngLat) => {
           const approximate = approxPlaceFromLngLat(lngLat)
           setInitialPlace(approximate.nearestCity
@@ -61,16 +92,29 @@ export function HomePage({
           setAddPlaceOpen(true)
         }}
       />
+      <div className="home-top-actions">
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="保存地图截图"
+          disabled={capturing}
+          onClick={() => void handleCapture()}
+        >
+          {capturing ? '…' : '📷'}
+        </button>
       {book && member && onBookChange && (
-        <>
           <button
             type="button"
-            className="settings-button"
+            className="icon-button"
             aria-label="打开地图设置"
             onClick={() => setSettingsOpen(true)}
           >
             ⚙
           </button>
+      )}
+      </div>
+      {book && member && onBookChange && (
+        <>
           <SettingsSheet
             open={settingsOpen}
             book={book}
@@ -79,6 +123,11 @@ export function HomePage({
             onBookChange={onBookChange}
           />
         </>
+      )}
+      {captureMessage && (
+        <div className="capture-toast" role="status" aria-live="polite">
+          {captureMessage}
+        </div>
       )}
       <button
         type="button"

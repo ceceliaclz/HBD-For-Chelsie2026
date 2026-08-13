@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Place, Visitor } from '../../src/domain/types'
 import {
+  COUNTRY_PALETTE,
   countryFillExpression,
+  countryWashColor,
   dominantVisitorsByCountry,
   visitedCountryCodes,
 } from '../../src/geo/countryLookup'
@@ -104,23 +106,29 @@ describe('dominantVisitorsByCountry', () => {
 
 describe('countryFillExpression', () => {
   it('returns a valid transparent expression when no country is visited', () => {
-    expect(countryFillExpression(new Map())).toEqual(['rgba', 0, 0, 0, 0])
+    expect(countryFillExpression([])).toEqual(['rgba', 0, 0, 0, 0])
   })
 
-  it('colors countries using real Natural Earth feature properties', () => {
-    const expression = countryFillExpression(new Map([
-      ['JP', 'rabbit'],
-      ['ID', 'dog'],
-      ['FR', 'together'],
-    ]))
+  it('assigns different wash colors to different countries', () => {
+    const expression = countryFillExpression(['JP', 'CN', 'FR'])
 
-    expect(evaluateExpression(expression, { ISO_A2: 'JP' })).toBe('#F5A0BF')
-    expect(evaluateExpression(expression, { iso_a2: 'id' })).toBe('#8CC8FF')
-    expect(evaluateExpression(expression, {
+    const japan = evaluateExpression(expression, { ISO_A2: 'JP' })
+    const china = evaluateExpression(expression, { ISO_A2: 'CN' })
+    const france = evaluateExpression(expression, {
       ISO_A2: '-99',
       ISO_A2_EH: 'FR',
-    })).toBe('#FFD278')
+    })
+
+    expect(japan).toBe(countryWashColor('JP'))
+    expect(china).toBe(countryWashColor('CN'))
+    expect(france).toBe(countryWashColor('FR'))
+    expect(new Set([japan, china, france]).size).toBeGreaterThan(1)
     expect(evaluateExpression(expression, { ISO_A2: 'NO' }))
       .toBe('rgba(0, 0, 0, 0)')
+  })
+
+  it('keeps the same country on a stable palette color', () => {
+    expect(countryWashColor('JP')).toBe(countryWashColor('jp'))
+    expect(COUNTRY_PALETTE).toContain(countryWashColor('JP'))
   })
 })

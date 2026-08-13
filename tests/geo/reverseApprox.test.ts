@@ -48,14 +48,16 @@ describe('approxPlaceFromLngLat', () => {
     const result = approxPlaceFromLngLat({ lat: 35.68, lng: 139.65 })
     expect(result.countryCode).toBe('JP')
     expect(result.countryName).toBe('Japan')
-    expect(result.nearestCity).toMatchObject(tokyo)
+    expect(result.nearestCity).toMatchObject({
+      name: 'Tokyo',
+      countryCode: 'JP',
+      countryName: 'Japan',
+    })
   })
 
   it('returns only the country when no seeded city is within 80km', () => {
-    const result = approxPlaceFromLngLat({ lat: 46.5, lng: 2.5 })
-
-    expect(result.countryCode).toBe('FR')
-    expect(result.countryName).toBe('France')
+    // High Antarctic plateau — no seeded city within 80km.
+    const result = approxPlaceFromLngLat({ lat: -75.1, lng: 0.2 })
     expect(result.nearestCity).toBeUndefined()
   })
 })

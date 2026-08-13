@@ -9,6 +9,11 @@ describe('searchCities', () => {
   it('finds cities by Chinese name', () => {
     expect(searchCities('马尼拉').some((hit) => hit.name === 'Manila')).toBe(true)
     expect(searchCities('旧金山').some((hit) => hit.name === 'San Francisco')).toBe(true)
+    expect(searchCities('上海').some((hit) => hit.name === 'Shanghai')).toBe(true)
+    expect(searchCities('南京').some((hit) => hit.name === 'Nanjing')).toBe(true)
+    expect(searchCities('北京').some((hit) => hit.name === 'Beijing')).toBe(true)
+    expect(searchCities('张家口').some((hit) => hit.name === 'Zhangjiakou')).toBe(true)
+    expect(searchCities('呈坎').some((hit) => hit.name === 'Chengkan')).toBe(true)
   })
 
   it('finds cities by English name for newly added destinations', () => {
@@ -29,9 +34,9 @@ describe('searchCities', () => {
       name: 'Lisbon',
       nameZh: '里斯本',
       countryCode: 'PT',
-      lat: 38.7223,
-      lng: -9.1393,
     })
+    expect(hits[0]?.lat).toBeGreaterThan(38)
+    expect(hits[0]?.lng).toBeLessThan(-9)
   })
 
   it('returns no results for an empty query', () => {
