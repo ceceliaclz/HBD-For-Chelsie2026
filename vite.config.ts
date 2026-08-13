@@ -3,9 +3,9 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-// GitHub Pages project URL: https://ceceliaclz.github.io/travel-itinerary-app/
+// GitHub Pages project URL: https://ceceliaclz.github.io/HBD-For-Chelsie2026/
 export default defineConfig({
-  base: '/travel-itinerary-app/',
+  base: '/HBD-For-Chelsie2026/',
   plugins: [
     react(),
     // Workbox SW generation hangs in this environment; keep manifest-only for deploy.
