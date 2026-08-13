@@ -45,11 +45,10 @@ describe('nearestCity', () => {
 
 describe('approxPlaceFromLngLat', () => {
   it('finds both the containing country and a nearby seeded city', () => {
-    expect(approxPlaceFromLngLat({ lat: 35.68, lng: 139.65 })).toEqual({
-      countryCode: 'JP',
-      countryName: 'Japan',
-      nearestCity: tokyo,
-    })
+    const result = approxPlaceFromLngLat({ lat: 35.68, lng: 139.65 })
+    expect(result.countryCode).toBe('JP')
+    expect(result.countryName).toBe('Japan')
+    expect(result.nearestCity).toMatchObject(tokyo)
   })
 
   it('returns only the country when no seeded city is within 80km', () => {

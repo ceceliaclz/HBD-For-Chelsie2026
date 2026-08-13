@@ -5,6 +5,6 @@ describe('markerGlyph', () => {
   it('returns the configured glyph for each marker pack and visitor', () => {
     expect(markerGlyph('stars', 'together')).toBe('💖')
     expect(markerGlyph('stars', 'rabbit')).toMatch(/⭐|🌟/)
-    expect(markerGlyph('animals', 'dog')).toBe('🐕')
+    expect(markerGlyph('animals', 'dog')).toBe('🐤')
   })
 })

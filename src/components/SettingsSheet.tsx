@@ -15,7 +15,7 @@ interface SettingsSheetProps {
 const PACKS: Array<{ value: MarkerPack; label: string; glyphs: string }> = [
   { value: 'stars', label: '星光', glyphs: '⭐ 🌟 💖' },
   { value: 'stamps', label: '邮戳', glyphs: '🎫 📮 💌' },
-  { value: 'animals', label: '动物', glyphs: '🐰 🐕 💕' },
+  { value: 'animals', label: '动物', glyphs: '🐰 🐤 💕' },
 ]
 
 export function SettingsSheet({
@@ -81,7 +81,9 @@ export function SettingsSheet({
 
         <div className="settings-section">
           <span className="settings-label">你的角色</span>
-          <strong>{member.role === 'rabbit' ? '🐰 兔子' : '🐕 线条小狗'}</strong>
+          <strong>
+            {`${member.role === 'rabbit' ? '🐰' : '🐤'} ${member.role === 'rabbit' ? '兔子' : '啾啾'}`}
+          </strong>
         </div>
 
         <div className="settings-section">

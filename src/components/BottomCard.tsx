@@ -6,7 +6,7 @@ type PlaceFilter = Visitor | 'all'
 const FILTERS: Array<{ value: PlaceFilter; label: string }> = [
   { value: 'all', label: '全部' },
   { value: 'rabbit', label: '兔子' },
-  { value: 'dog', label: '小狗' },
+  { value: 'dog', label: '啾啾' },
   { value: 'together', label: '一起' },
 ]
 

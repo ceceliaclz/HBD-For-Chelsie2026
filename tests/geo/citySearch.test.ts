@@ -1,21 +1,37 @@
 import { describe, expect, it } from 'vitest'
-import { searchCities } from '../../src/geo/citySearch'
+import { formatCityLabel, searchCities } from '../../src/geo/citySearch'
 
 describe('searchCities', () => {
-  it('finds cities by a partial city name', () => {
+  it('finds cities by a partial English city name', () => {
     expect(searchCities('tok').some((hit) => hit.name === 'Tokyo')).toBe(true)
   })
 
+  it('finds cities by Chinese name', () => {
+    expect(searchCities('马尼拉').some((hit) => hit.name === 'Manila')).toBe(true)
+    expect(searchCities('旧金山').some((hit) => hit.name === 'San Francisco')).toBe(true)
+  })
+
+  it('finds cities by English name for newly added destinations', () => {
+    expect(searchCities('manila').some((hit) => hit.name === 'Manila')).toBe(true)
+    expect(searchCities('san francisco').some((hit) => hit.name === 'San Francisco')).toBe(true)
+    expect(searchCities('zanzibar').some((hit) => hit.countryCode === 'TZ')).toBe(true)
+  })
+
+  it('finds cities by Chinese country name', () => {
+    const hits = searchCities('坦桑尼亚', 5)
+    expect(hits.length).toBeGreaterThan(0)
+    expect(hits.every((hit) => hit.countryCode === 'TZ')).toBe(true)
+  })
+
   it('loads cities from the seed data', () => {
-    expect(searchCities('lisbon')).toEqual([
-      {
-        name: 'Lisbon',
-        countryCode: 'PT',
-        countryName: 'Portugal',
-        lat: 38.7223,
-        lng: -9.1393,
-      },
-    ])
+    const hits = searchCities('lisbon')
+    expect(hits[0]).toMatchObject({
+      name: 'Lisbon',
+      nameZh: '里斯本',
+      countryCode: 'PT',
+      lat: 38.7223,
+      lng: -9.1393,
+    })
   })
 
   it('returns no results for an empty query', () => {
@@ -27,5 +43,10 @@ describe('searchCities', () => {
 
     expect(hits).toHaveLength(1)
     expect(hits[0]?.countryCode).toBe('JP')
+  })
+
+  it('formats bilingual labels', () => {
+    expect(formatCityLabel({ name: 'Manila', nameZh: '马尼拉' })).toBe('马尼拉 · Manila')
+    expect(formatCityLabel({ name: 'Lisbon' })).toBe('Lisbon')
   })
 })

@@ -1,12 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Visitor } from '../domain/types'
-import { searchCities, type CityHit } from '../geo/citySearch'
+import { formatCityLabel, searchCities, type CityHit } from '../geo/citySearch'
+import { visitorEmoji, visitorLabel } from '../domain/roleLabels'
 
-const VISITORS: Array<{ value: Visitor; label: string; icon: string }> = [
-  { value: 'rabbit', label: '兔子', icon: '🐰' },
-  { value: 'dog', label: '小狗', icon: '🐶' },
-  { value: 'together', label: '一起', icon: '♥' },
-]
+const VISITORS: Visitor[] = ['rabbit', 'dog', 'together']
 
 export interface AddPlaceSheetProps {
   open: boolean
@@ -91,8 +88,8 @@ export function AddPlaceSheet({
               type="search"
               value={query}
               autoFocus
-              placeholder="搜索城市或国家"
-              aria-label="搜索城市或国家"
+              placeholder="搜索城市（中文/英文）或国家"
+              aria-label="搜索城市（中文或英文）或国家"
               onChange={(event) => {
                 setQuery(event.target.value)
                 setSelected(null)
@@ -114,7 +111,7 @@ export function AddPlaceSheet({
                 onClick={() => setSelected(selected)}
               >
                 <span className="city-result__pin">✦</span>
-                <span><strong>{selected.name}</strong><small>{selected.countryName}</small></span>
+                <span><strong>{formatCityLabel(selected)}</strong><small>{selected.countryName}</small></span>
                 <span aria-hidden="true">✓</span>
               </button>
             )}
@@ -131,7 +128,7 @@ export function AddPlaceSheet({
                 onClick={() => setSelected({ ...hit, placeType: 'city' })}
               >
                 <span className="city-result__pin">✦</span>
-                <span><strong>{hit.name}</strong><small>{hit.countryName}</small></span>
+                <span><strong>{formatCityLabel(hit)}</strong><small>{hit.countryName}</small></span>
                 <span aria-hidden="true">{
                   selected?.placeType === 'city'
                   && selected.name === hit.name
@@ -149,12 +146,12 @@ export function AddPlaceSheet({
               {VISITORS.map((item) => (
                 <button
                   type="button"
-                  key={item.value}
-                  className={`visitor-choice visitor-choice--${item.value}`}
-                  aria-pressed={visitor === item.value}
-                  onClick={() => setVisitor(item.value)}
+                  key={item}
+                  className={`visitor-choice visitor-choice--${item}`}
+                  aria-pressed={visitor === item}
+                  onClick={() => setVisitor(item)}
                 >
-                  <span aria-hidden="true">{item.icon}</span>{item.label}
+                  <span aria-hidden="true">{visitorEmoji(item)}</span>{visitorLabel(item)}
                 </button>
               ))}
             </div>

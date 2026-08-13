@@ -1,4 +1,5 @@
 import type { Role } from '../domain/types'
+import { ROLE_LABELS } from '../domain/roleLabels'
 
 interface RolePickerProps {
   value: Role | null
@@ -6,10 +7,10 @@ interface RolePickerProps {
   disabled?: boolean
 }
 
-const ROLES: Array<{ role: Role; emoji: string; name: string; note: string }> = [
-  { role: 'rabbit', emoji: '🐰', name: '兔子', note: '粉色足迹' },
-  { role: 'dog', emoji: '🐕', name: '线条小狗', note: '蓝色足迹' },
-]
+const ROLES = (['rabbit', 'dog'] as const).map((role) => ({
+  role,
+  ...ROLE_LABELS[role],
+}))
 
 export function RolePicker({ value, onChange, disabled = false }: RolePickerProps) {
   return (
