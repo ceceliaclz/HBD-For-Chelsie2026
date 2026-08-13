@@ -71,7 +71,7 @@ function RootPage() {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <Routes>
         <Route path="/" element={<RootPage />} />
         <Route path="/join/:code?" element={<JoinPage />} />

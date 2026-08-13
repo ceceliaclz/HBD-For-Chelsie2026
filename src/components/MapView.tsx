@@ -70,7 +70,7 @@ function addOverlayLayers(
 
   map.addSource(COUNTRY_SOURCE_ID, {
     type: 'geojson',
-    data: '/geo/countries-110m.json',
+    data: `${import.meta.env.BASE_URL}geo/countries-110m.json`,
   })
   map.addLayer({
     id: COUNTRY_FILL_LAYER_ID,
