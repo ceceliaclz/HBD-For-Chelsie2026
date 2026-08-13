@@ -15,6 +15,9 @@ function joinErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message === 'Couple book not found') {
     return '没有找到这个邀请码，请和对方确认'
   }
+  if (error instanceof Error && error.message) {
+    return `加入失败：${error.message}`
+  }
   return '加入失败，请检查网络后重试'
 }
 
