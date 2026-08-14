@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { BottomCard } from '../../src/components/BottomCard'
+import { BottomCard, HomeTopStats } from '../../src/components/BottomCard'
 import type { Place } from '../../src/domain/types'
 
 const base = {
@@ -17,23 +17,34 @@ const places: Place[] = [
   { ...base, id: '3', placeType: 'country', name: 'France', countryCode: 'FR', visitor: 'dog' },
 ]
 
-describe('BottomCard', () => {
-  it('shows travel stats and updates the selected filter', () => {
+describe('BottomCard dock', () => {
+  it('filters and triggers add-place CTA', () => {
     const onFilterChange = vi.fn()
+    const onAddPlace = vi.fn()
 
     render(
       <BottomCard
         places={places}
         filter="all"
         onFilterChange={onFilterChange}
+        onAddPlace={onAddPlace}
       />,
     )
 
-    expect(screen.getByLabelText('旅行统计')).toHaveTextContent('2 个国家')
-    expect(screen.getByLabelText('旅行统计')).toHaveTextContent('2 座城市')
-    expect(screen.getByLabelText('旅行统计')).toHaveTextContent('1 次一起')
-
     fireEvent.click(screen.getByRole('button', { name: '兔子' }))
     expect(onFilterChange).toHaveBeenCalledWith('rabbit')
+
+    fireEvent.click(screen.getByRole('button', { name: '点亮新地方' }))
+    expect(onAddPlace).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('HomeTopStats', () => {
+  it('shows compact travel stats', () => {
+    render(<HomeTopStats places={places} />)
+
+    expect(screen.getByLabelText('旅行统计')).toHaveTextContent('2 国')
+    expect(screen.getByLabelText('旅行统计')).toHaveTextContent('2 城')
+    expect(screen.getByLabelText('旅行统计')).toHaveTextContent('1 一起')
   })
 })

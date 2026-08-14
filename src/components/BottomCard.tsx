@@ -1,5 +1,6 @@
 import { computeStats } from '../domain/stats'
 import type { Place, Visitor } from '../domain/types'
+import { IconPlus } from './icons'
 
 type PlaceFilter = Visitor | 'all'
 
@@ -14,38 +15,17 @@ export interface BottomCardProps {
   places: Place[]
   filter: PlaceFilter
   onFilterChange: (filter: PlaceFilter) => void
+  onAddPlace: () => void
 }
 
 export function BottomCard({
   places,
   filter,
   onFilterChange,
+  onAddPlace,
 }: BottomCardProps) {
-  const stats = computeStats(places)
-
   return (
-    <section className="bottom-card" aria-label="旅行足迹统计与筛选">
-      <div className="bottom-card__handle" aria-hidden="true" />
-      <div className="bottom-card__heading">
-        <div>
-          <p className="bottom-card__eyebrow">OUR LITTLE WORLD</p>
-          <h1>一起走过的地方</h1>
-        </div>
-        <span className="bottom-card__heart" aria-hidden="true">♥</span>
-      </div>
-
-      <div className="travel-stats" aria-label="旅行统计">
-        <span><strong>{stats.countryCount}</strong> 个国家</span>
-        <span><strong>{stats.cityCount}</strong> 座城市</span>
-        <span><strong>{stats.togetherCount}</strong> 次一起</span>
-      </div>
-
-      {places.length === 0 && (
-        <p className="bottom-card__empty">
-          还没有足迹。搜索或长按地图，点亮你们的第一个地方。
-        </p>
-      )}
-
+    <section className="home-dock" aria-label="筛选与点亮">
       <div className="filter-chips" aria-label="按旅行成员筛选">
         {FILTERS.map((item) => (
           <button
@@ -59,6 +39,43 @@ export function BottomCard({
           </button>
         ))}
       </div>
+
+      {places.length === 0 && (
+        <p className="home-dock__empty">
+          搜索或长按地图，点亮你们的第一个地方。
+        </p>
+      )}
+
+      <button type="button" className="home-dock__cta" onClick={onAddPlace}>
+        <IconPlus className="home-dock__cta-icon" />
+        点亮新地方
+      </button>
     </section>
+  )
+}
+
+export interface HomeTopStatsProps {
+  places: Place[]
+}
+
+export function HomeTopStats({ places }: HomeTopStatsProps) {
+  const stats = computeStats(places)
+
+  return (
+    <header className="home-top-meta" aria-label="地图概览">
+      <p className="home-top-meta__eyebrow">OUR LITTLE WORLD</p>
+      <h1 className="home-top-meta__title">一起走过的地方</h1>
+      <div className="home-top-meta__stats" aria-label="旅行统计">
+        <span>
+          <strong>{stats.countryCount}</strong> 国
+        </span>
+        <span>
+          <strong>{stats.cityCount}</strong> 城
+        </span>
+        <span>
+          <strong>{stats.togetherCount}</strong> 一起
+        </span>
+      </div>
+    </header>
   )
 }

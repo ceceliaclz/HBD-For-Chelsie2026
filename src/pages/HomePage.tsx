@@ -4,7 +4,8 @@ import {
   AddPlaceSheet,
   type PlaceSelection,
 } from '../components/AddPlaceSheet'
-import { BottomCard } from '../components/BottomCard'
+import { BottomCard, HomeTopStats } from '../components/BottomCard'
+import { IconCamera, IconSettings } from '../components/icons'
 import { MapView } from '../components/MapView'
 import { SettingsSheet } from '../components/SettingsSheet'
 import type { CoupleBook, MarkerPack, Member, Place, Visitor } from '../domain/types'
@@ -69,6 +70,11 @@ export function HomePage({
     }
   }
 
+  function openAddPlace(place: PlaceSelection | null = null) {
+    setInitialPlace(place)
+    setAddPlaceOpen(true)
+  }
+
   return (
     <main className="home-page">
       <MapView
@@ -80,18 +86,22 @@ export function HomePage({
         }}
         onLongPress={(lngLat) => {
           const approximate = approxPlaceFromLngLat(lngLat)
-          setInitialPlace(approximate.nearestCity
-            ? { ...approximate.nearestCity, placeType: 'city' }
-            : {
-                placeType: 'country',
-                name: approximate.countryName,
-                countryCode: approximate.countryCode,
-                countryName: approximate.countryName,
-                ...lngLat,
-              })
-          setAddPlaceOpen(true)
+          openAddPlace(
+            approximate.nearestCity
+              ? { ...approximate.nearestCity, placeType: 'city' }
+              : {
+                  placeType: 'country',
+                  name: approximate.countryName,
+                  countryCode: approximate.countryCode,
+                  countryName: approximate.countryName,
+                  ...lngLat,
+                },
+          )
         }}
       />
+
+      <HomeTopStats places={places} />
+
       <div className="home-top-actions">
         <button
           type="button"
@@ -100,46 +110,36 @@ export function HomePage({
           disabled={capturing}
           onClick={() => void handleCapture()}
         >
-          {capturing ? '…' : '📷'}
+          {capturing ? '…' : <IconCamera />}
         </button>
-      {book && member && onBookChange && (
+        {book && member && onBookChange && (
           <button
             type="button"
             className="icon-button"
             aria-label="打开地图设置"
             onClick={() => setSettingsOpen(true)}
           >
-            ⚙
+            <IconSettings />
           </button>
-      )}
+        )}
       </div>
+
       {book && member && onBookChange && (
-        <>
-          <SettingsSheet
-            open={settingsOpen}
-            book={book}
-            member={member}
-            onClose={() => setSettingsOpen(false)}
-            onBookChange={onBookChange}
-          />
-        </>
+        <SettingsSheet
+          open={settingsOpen}
+          book={book}
+          member={member}
+          onClose={() => setSettingsOpen(false)}
+          onBookChange={onBookChange}
+        />
       )}
+
       {captureMessage && (
         <div className="capture-toast" role="status" aria-live="polite">
           {captureMessage}
         </div>
       )}
-      <button
-        type="button"
-        className="add-place-fab"
-        onClick={() => {
-          setInitialPlace(null)
-          setAddPlaceOpen(true)
-        }}
-      >
-        <span aria-hidden="true">＋</span>
-        点亮新地方
-      </button>
+
       <div
         className={`sync-status sync-status--${syncStatus}`}
         role="status"
@@ -147,11 +147,14 @@ export function HomePage({
       >
         {syncStatusText}
       </div>
+
       <BottomCard
         places={places}
         filter={filter}
         onFilterChange={setFilter}
+        onAddPlace={() => openAddPlace(null)}
       />
+
       <AddPlaceSheet
         open={addPlaceOpen}
         defaultVisitor="together"
