@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   Map as MapLibreMap,
   NavigationControl,
@@ -20,7 +20,6 @@ import {
   visitedCountryCodes,
 } from '../geo/countryLookup'
 import { fitMapToPlaces } from '../geo/fitPlaces'
-import { CityMarkers } from './CityMarkers'
 
 const BASE_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark'
 const COUNTRY_SOURCE_ID = 'countries'
@@ -190,7 +189,6 @@ export function MapView({
   const placeCountRef = useRef(0)
   const placesRef = useRef(places)
   const filterRef = useRef(filter)
-  const [mapInstance, setMapInstance] = useState<MapLibreMap | null>(null)
   const onMapReadyRef = useRef(onMapReady)
   onMapReadyRef.current = onMapReady
   const visitedCodes = visitedCountryCodes(places, filter)
@@ -228,7 +226,6 @@ export function MapView({
       canvasContextAttributes: { preserveDrawingBuffer: true },
     })
     mapRef.current = map
-    setMapInstance(map)
     onMapReadyRef.current?.(map)
     // Keep north-up: two-finger rotate made the map feel "upside down".
     map.touchZoomRotate.disableRotation()
@@ -282,7 +279,6 @@ export function MapView({
       onMapReadyRef.current?.(null)
       map.remove()
       mapRef.current = null
-      setMapInstance(null)
     }
   }, [])
 
@@ -320,21 +316,11 @@ export function MapView({
   }, [places])
 
   return (
-    <>
-      <div
-        ref={containerRef}
-        className="map-view"
-        data-marker-pack={markerPack}
-        aria-label="共同旅行地图"
-      />
-      {mapInstance && (
-        <CityMarkers
-          map={mapInstance}
-          places={places}
-          filter={filter}
-          markerPack={markerPack}
-        />
-      )}
-    </>
+    <div
+      ref={containerRef}
+      className="map-view"
+      data-marker-pack={markerPack}
+      aria-label="共同旅行地图"
+    />
   )
 }

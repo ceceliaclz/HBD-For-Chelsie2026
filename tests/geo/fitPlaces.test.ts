@@ -19,8 +19,8 @@ function place(partial: Partial<Place> & Pick<Place, 'lng' | 'lat'>): Place {
 describe('fitMapToPlaces', () => {
   it('exposes generous padding so markers clear chrome', () => {
     const padding = placesBoundsPadding()
-    expect(padding.top).toBeGreaterThanOrEqual(96)
-    expect(padding.bottom).toBeGreaterThanOrEqual(240)
+    expect(padding.top).toBeGreaterThanOrEqual(120)
+    expect(padding.bottom).toBeGreaterThanOrEqual(160)
   })
 
   it('fits bounds for multiple places', () => {

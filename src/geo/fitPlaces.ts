@@ -12,8 +12,9 @@ export function placesBoundsPadding(): PaddingOptions {
       : 0
 
   return {
-    top: Math.max(96, 56 + topSafe),
-    bottom: 280,
+    // Clear the top meta title / stats and bottom dock CTA.
+    top: Math.max(120, 88 + topSafe),
+    bottom: 168,
     left: 48,
     right: 48,
   }

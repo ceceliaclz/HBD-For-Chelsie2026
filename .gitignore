@@ -8,3 +8,4 @@ dist/
 .worktrees/
 .deploy-gh-pages/
 .deploy-gh-pages-new/
+home-ui-preview.png
