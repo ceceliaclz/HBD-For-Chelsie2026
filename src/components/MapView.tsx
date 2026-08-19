@@ -6,6 +6,7 @@ import {
   type GeoJSONSource,
   type MapMouseEvent,
   type MapTouchEvent,
+  type StyleSpecification,
 } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { MarkerPack, Place, Visitor } from '../domain/types'
@@ -21,12 +22,9 @@ import {
 } from '../geo/countryLookup'
 import { fitMapToPlaces } from '../geo/fitPlaces'
 
-/** Primary + fallback dark basemaps (OpenFreeMap can be flaky on some networks). */
-const BASE_STYLE_URLS = [
-  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-  'https://tiles.openfreemap.org/styles/dark',
-] as const
 const COUNTRY_SOURCE_ID = 'countries'
+const WORLD_LAND_LAYER_ID = 'world-land'
+const WORLD_BORDER_LAYER_ID = 'world-borders'
 const COUNTRY_FILL_LAYER_ID = 'visited-countries'
 const COUNTRY_LINE_LAYER_ID = 'country-borders'
 const CITY_SOURCE_ID = 'city-points'
@@ -37,6 +35,53 @@ const CITY_HEART_LAYER_ID = 'city-hearts'
 const CITY_HEART_IMAGE_ID = 'city-heart-icon'
 const LONG_PRESS_MS = 500
 const CITY_OUTLINE_MIN_ZOOM = 5
+
+/** Offline-friendly dark atlas: no external tile CDN (works on China mobile data). */
+function createLocalAtlasStyle(): StyleSpecification {
+  return {
+    version: 8,
+    name: 'local-dark-atlas',
+    sources: {
+      [COUNTRY_SOURCE_ID]: {
+        type: 'geojson',
+        data: `${import.meta.env.BASE_URL}geo/countries-110m.json`,
+      },
+    },
+    layers: [
+      {
+        id: 'background',
+        type: 'background',
+        paint: { 'background-color': '#0b1220' },
+      },
+      {
+        id: WORLD_LAND_LAYER_ID,
+        type: 'fill',
+        source: COUNTRY_SOURCE_ID,
+        paint: {
+          'fill-color': '#1c2740',
+          'fill-opacity': 1,
+        },
+      },
+      {
+        id: WORLD_BORDER_LAYER_ID,
+        type: 'line',
+        source: COUNTRY_SOURCE_ID,
+        paint: {
+          'line-color': 'rgba(170, 190, 220, 0.28)',
+          'line-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            1,
+            0.5,
+            5,
+            1.1,
+          ],
+        },
+      },
+    ],
+  }
+}
 
 export interface MapViewProps {
   places: Place[]
@@ -64,24 +109,21 @@ function addOverlayLayers(
   fillExpression: ExpressionSpecification,
   borderExpression: ExpressionSpecification,
 ) {
-  if (map.getSource(COUNTRY_SOURCE_ID)) {
+  if (map.getLayer(COUNTRY_FILL_LAYER_ID)) {
     syncOverlayData(map, places, filter)
     map.setPaintProperty(COUNTRY_FILL_LAYER_ID, 'fill-color', fillExpression)
     map.setPaintProperty(COUNTRY_LINE_LAYER_ID, 'line-color', borderExpression)
     return
   }
 
-  map.addSource(COUNTRY_SOURCE_ID, {
-    type: 'geojson',
-    data: `${import.meta.env.BASE_URL}geo/countries-110m.json`,
-  })
+  // Visited wash sits above the local world land layer.
   map.addLayer({
     id: COUNTRY_FILL_LAYER_ID,
     type: 'fill',
     source: COUNTRY_SOURCE_ID,
     paint: {
       'fill-color': fillExpression,
-      'fill-opacity': 0.42,
+      'fill-opacity': 0.62,
     },
   })
   map.addLayer({
@@ -95,9 +137,9 @@ function addOverlayLayers(
         ['linear'],
         ['zoom'],
         1,
-        0.6,
+        0.8,
         5,
-        1.4,
+        1.6,
       ],
     },
   })
@@ -215,7 +257,7 @@ export function MapView({
 
     const map = new MapLibreMap({
       container: containerRef.current,
-      style: BASE_STYLE_URLS[0],
+      style: createLocalAtlasStyle(),
       center: [15, 18],
       zoom: 1.25,
       bearing: 0,
@@ -235,16 +277,13 @@ export function MapView({
     map.touchZoomRotate.disableRotation()
     map.dragRotate.disable()
 
-    // Keep zoom away from the bottom dock; top-right sits under toolbar icons.
+    // Bottom-left, above the dock — clear of camera/settings icons.
     map.addControl(
       new NavigationControl({ showCompass: false }),
-      'top-right',
+      'bottom-left',
     )
 
-    let styleIndex = 0
-    let styleReady = false
     const onStyleReady = () => {
-      styleReady = true
       map.setBearing(0)
       map.setPitch(0)
       addOverlayLayers(
@@ -259,11 +298,6 @@ export function MapView({
       }
     }
     map.on('style.load', onStyleReady)
-    const styleFailSafe = window.setTimeout(() => {
-      if (styleReady || styleIndex >= BASE_STYLE_URLS.length - 1) return
-      styleIndex += 1
-      map.setStyle(BASE_STYLE_URLS[styleIndex])
-    }, 4500)
 
     map.on('contextmenu', (event: MapMouseEvent) => {
       event.originalEvent.preventDefault()
@@ -291,7 +325,6 @@ export function MapView({
     map.on('touchend', cancelLongPress)
 
     return () => {
-      window.clearTimeout(styleFailSafe)
       cancelLongPress()
       onMapReadyRef.current?.(null)
       map.remove()
