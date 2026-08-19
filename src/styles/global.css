@@ -492,44 +492,51 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 .maplibregl-ctrl-bottom-left {
   left: 16px;
   bottom: calc(max(14px, env(safe-area-inset-bottom)) + 150px);
+  z-index: 4;
 }
 
 .maplibregl-ctrl-top-right {
-  display: none;
+  display: none !important;
 }
 
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
-  display: none;
+  display: none !important;
 }
 
+.maplibregl-ctrl-attrib.maplibregl-compact,
 .maplibregl-ctrl-attrib {
-  margin: 0 8px 8px 0;
-  opacity: 0.45;
-  font-size: 10px;
+  background: rgba(12, 18, 32, 0.72) !important;
+  color: rgba(245, 247, 251, 0.55) !important;
+  box-shadow: none !important;
+}
+
+.maplibregl-ctrl-attrib a {
+  color: rgba(245, 247, 251, 0.55) !important;
 }
 
 .maplibregl-ctrl-group {
   overflow: hidden;
   border: 1px solid rgba(245, 247, 251, 0.14);
   border-radius: 12px;
-  background: rgba(28, 36, 54, 0.92);
-}
-
-/* Marker wrappers no longer host HTML hearts; keep canvas clipping normal. */
-.home-page .maplibregl-marker {
-  z-index: 3;
+  background: rgba(28, 36, 54, 0.92) !important;
 }
 
 .maplibregl-ctrl-group button {
-  background-color: transparent;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.maplibregl-ctrl-icon {
+  filter: invert(1) opacity(0.82);
 }
 
 .maplibregl-ctrl-group button + button {
   border-top-color: rgba(245, 247, 251, 0.12);
 }
 
-.maplibregl-ctrl-icon {
-  filter: invert(1) opacity(0.82);
+/* Marker wrappers no longer host HTML hearts; keep canvas clipping normal. */
+.home-page .maplibregl-marker {
+  z-index: 3;
 }
 
 .app-loading {

@@ -7,7 +7,21 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#121826" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>我们的地图</title>
+    <script>
+      // Clear stale PWA caches from earlier deploys so phones don't keep a black map build.
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (reg) { reg.unregister() })
+        })
+      }
+      if (window.caches) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (key) { caches.delete(key) })
+        })
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

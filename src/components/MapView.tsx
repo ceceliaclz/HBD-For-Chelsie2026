@@ -21,6 +21,7 @@ import {
   visitedCountryCodes,
 } from '../geo/countryLookup'
 import { fitMapToPlaces } from '../geo/fitPlaces'
+import countriesGeoJson from '../../public/geo/countries-110m.json'
 
 const COUNTRY_SOURCE_ID = 'countries'
 const WORLD_LAND_LAYER_ID = 'world-land'
@@ -44,7 +45,8 @@ function createLocalAtlasStyle(): StyleSpecification {
     sources: {
       [COUNTRY_SOURCE_ID]: {
         type: 'geojson',
-        data: `${import.meta.env.BASE_URL}geo/countries-110m.json`,
+        // Inline data so mobile data / CDN fetch of geo/*.json cannot blank the map.
+        data: countriesGeoJson as never,
       },
     },
     layers: [
