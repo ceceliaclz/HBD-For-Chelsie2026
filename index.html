@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#121826" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>我们的地图</title>
+    <script>
+      // Clear stale PWA caches so phones don't keep a black MapLibre build.
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (reg) { reg.unregister() })
+        })
+      }
+      if (window.caches) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (key) { caches.delete(key) })
+        })
+      }
+    </script>
+    <script type="module" crossorigin src="/HBD-For-Chelsie2026/assets/index-CbaofZEf.js"></script>
+    <link rel="stylesheet" crossorigin href="/HBD-For-Chelsie2026/assets/index-CTVKmSZU.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
