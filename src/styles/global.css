@@ -28,7 +28,26 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 }
 
 .map-view {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   background: var(--bg);
+}
+
+.home-dock {
+  position: absolute;
+  z-index: 3;
+  right: 16px;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  left: 16px;
+  max-width: 540px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(245, 247, 251, 0.12);
+  border-radius: 20px;
+  background: rgba(22, 30, 46, 0.78);
+  backdrop-filter: blur(14px);
 }
 
 .city-marker {
@@ -139,22 +158,6 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 .home-top-meta__stats strong {
   color: var(--text);
   font-size: 13px;
-}
-
-.home-dock {
-  position: absolute;
-  z-index: 3;
-  right: 16px;
-  bottom: max(14px, env(safe-area-inset-bottom));
-  left: 16px;
-  max-width: 540px;
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid rgba(245, 247, 251, 0.12);
-  border-radius: 20px;
-  background: rgba(22, 30, 46, 0.88);
-  backdrop-filter: blur(16px);
 }
 
 .home-dock__empty {
@@ -486,9 +489,18 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   .add-place-backdrop, .add-place-sheet { animation: none; }
 }
 
-.maplibregl-ctrl-bottom-right {
-  right: 12px;
-  bottom: max(160px, calc(140px + var(--safe-bottom)));
+.maplibregl-ctrl-top-right {
+  top: calc(max(16px, env(safe-area-inset-top)) + 52px);
+  right: 16px;
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
+  display: none;
+}
+
+.maplibregl-ctrl-attrib {
+  margin: 0 8px 8px 0;
+  opacity: 0.55;
 }
 
 .maplibregl-ctrl-group {
@@ -496,24 +508,11 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   border: 1px solid rgba(245, 247, 251, 0.14);
   border-radius: 12px;
   background: rgba(28, 36, 54, 0.88);
-  box-shadow: 0 8px 24px rgba(3, 7, 18, 0.28);
 }
 
-/* Keep city pins above the country wash; don't clip heart stroke/glow. */
+/* Marker wrappers no longer host HTML hearts; keep canvas clipping normal. */
 .home-page .maplibregl-marker {
   z-index: 3;
-  overflow: visible !important;
-}
-
-.home-page .maplibregl-marker .city-marker,
-.home-page .maplibregl-marker .city-marker__heart,
-.home-page .maplibregl-marker .city-marker__heart-svg {
-  overflow: visible;
-}
-
-.map-view .maplibregl-canvas-container,
-.map-view .maplibregl-marker-container {
-  overflow: visible !important;
 }
 
 .maplibregl-ctrl-group button {

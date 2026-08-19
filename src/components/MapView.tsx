@@ -21,7 +21,11 @@ import {
 } from '../geo/countryLookup'
 import { fitMapToPlaces } from '../geo/fitPlaces'
 
-const BASE_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark'
+/** Primary + fallback dark basemaps (OpenFreeMap can be flaky on some networks). */
+const BASE_STYLE_URLS = [
+  'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  'https://tiles.openfreemap.org/styles/dark',
+] as const
 const COUNTRY_SOURCE_ID = 'countries'
 const COUNTRY_FILL_LAYER_ID = 'visited-countries'
 const COUNTRY_LINE_LAYER_ID = 'country-borders'
@@ -77,7 +81,7 @@ function addOverlayLayers(
     source: COUNTRY_SOURCE_ID,
     paint: {
       'fill-color': fillExpression,
-      'fill-opacity': 0.55,
+      'fill-opacity': 0.42,
     },
   })
   map.addLayer({
@@ -211,7 +215,7 @@ export function MapView({
 
     const map = new MapLibreMap({
       container: containerRef.current,
-      style: BASE_STYLE_URL,
+      style: BASE_STYLE_URLS[0],
       center: [15, 18],
       zoom: 1.25,
       bearing: 0,
@@ -231,12 +235,16 @@ export function MapView({
     map.touchZoomRotate.disableRotation()
     map.dragRotate.disable()
 
+    // Keep zoom away from the bottom dock; top-right sits under toolbar icons.
     map.addControl(
       new NavigationControl({ showCompass: false }),
-      'bottom-right',
+      'top-right',
     )
 
+    let styleIndex = 0
+    let styleReady = false
     const onStyleReady = () => {
+      styleReady = true
       map.setBearing(0)
       map.setPitch(0)
       addOverlayLayers(
@@ -246,8 +254,16 @@ export function MapView({
         fillExpressionRef.current,
         borderExpressionRef.current,
       )
+      if (placesRef.current.length > 0) {
+        fitMapToPlaces(map, placesRef.current, { animate: false })
+      }
     }
-    map.on('load', onStyleReady)
+    map.on('style.load', onStyleReady)
+    const styleFailSafe = window.setTimeout(() => {
+      if (styleReady || styleIndex >= BASE_STYLE_URLS.length - 1) return
+      styleIndex += 1
+      map.setStyle(BASE_STYLE_URLS[styleIndex])
+    }, 4500)
 
     map.on('contextmenu', (event: MapMouseEvent) => {
       event.originalEvent.preventDefault()
@@ -275,6 +291,7 @@ export function MapView({
     map.on('touchend', cancelLongPress)
 
     return () => {
+      window.clearTimeout(styleFailSafe)
       cancelLongPress()
       onMapReadyRef.current?.(null)
       map.remove()
