@@ -489,29 +489,47 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   .add-place-backdrop, .add-place-sheet { animation: none; }
 }
 
-.maplibregl-ctrl-bottom-left {
-  left: 16px;
-  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 150px);
+.map-zoom {
+  position: absolute;
   z-index: 4;
+  left: 16px;
+  top: 48%;
+  transform: translateY(-50%);
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid rgba(245, 247, 251, 0.16);
+  border-radius: 12px;
+  background: rgba(28, 36, 54, 0.92);
+  backdrop-filter: blur(12px);
 }
 
-.maplibregl-ctrl-top-right {
-  display: none !important;
+.map-zoom__btn {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-bottom: 1px solid rgba(245, 247, 251, 0.12);
+  color: var(--text);
+  background: transparent;
+  font: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
 }
 
+.map-zoom__btn:last-child {
+  border-bottom: 0;
+}
+
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-top-right,
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
   display: none !important;
 }
 
-.maplibregl-ctrl-attrib.maplibregl-compact,
 .maplibregl-ctrl-attrib {
-  background: rgba(12, 18, 32, 0.72) !important;
-  color: rgba(245, 247, 251, 0.55) !important;
-  box-shadow: none !important;
-}
-
-.maplibregl-ctrl-attrib a {
-  color: rgba(245, 247, 251, 0.55) !important;
+  display: none !important;
 }
 
 .maplibregl-ctrl-group {

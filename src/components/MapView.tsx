@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import {
   Map as MapLibreMap,
-  NavigationControl,
   type ExpressionSpecification,
   type GeoJSONSource,
   type MapMouseEvent,
@@ -38,6 +37,21 @@ const LONG_PRESS_MS = 500
 const CITY_OUTLINE_MIN_ZOOM = 5
 
 /** Offline-friendly dark atlas: no external tile CDN (works on China mobile data). */
+function atlasCountriesData(): {
+  type: 'FeatureCollection'
+  features: unknown[]
+} {
+  const raw = countriesGeoJson as {
+    type: string
+    features: unknown[]
+  }
+  // Drop legacy `crs` — MapLibre expects plain WGS84 FeatureCollection.
+  return {
+    type: 'FeatureCollection',
+    features: raw.features,
+  }
+}
+
 function createLocalAtlasStyle(): StyleSpecification {
   return {
     version: 8,
@@ -45,22 +59,22 @@ function createLocalAtlasStyle(): StyleSpecification {
     sources: {
       [COUNTRY_SOURCE_ID]: {
         type: 'geojson',
-        // Inline data so mobile data / CDN fetch of geo/*.json cannot blank the map.
-        data: countriesGeoJson as never,
+        data: atlasCountriesData() as never,
       },
     },
     layers: [
       {
         id: 'background',
         type: 'background',
-        paint: { 'background-color': '#0b1220' },
+        paint: { 'background-color': '#0a1020' },
       },
       {
         id: WORLD_LAND_LAYER_ID,
         type: 'fill',
         source: COUNTRY_SOURCE_ID,
         paint: {
-          'fill-color': '#1c2740',
+          // High-contrast land so the atlas is obvious on phone OLED screens.
+          'fill-color': '#3d4f6f',
           'fill-opacity': 1,
         },
       },
@@ -69,15 +83,15 @@ function createLocalAtlasStyle(): StyleSpecification {
         type: 'line',
         source: COUNTRY_SOURCE_ID,
         paint: {
-          'line-color': 'rgba(170, 190, 220, 0.28)',
+          'line-color': 'rgba(210, 225, 255, 0.55)',
           'line-width': [
             'interpolate',
             ['linear'],
             ['zoom'],
             1,
-            0.5,
+            0.7,
             5,
-            1.1,
+            1.4,
           ],
         },
       },
@@ -261,7 +275,7 @@ export function MapView({
       container: containerRef.current,
       style: createLocalAtlasStyle(),
       center: [15, 18],
-      zoom: 1.25,
+      zoom: 1.35,
       bearing: 0,
       pitch: 0,
       minZoom: 0.8,
@@ -269,7 +283,7 @@ export function MapView({
       dragRotate: false,
       touchPitch: false,
       pitchWithRotate: false,
-      attributionControl: { compact: true },
+      attributionControl: false,
       // Needed so memory-card screenshots can read the WebGL canvas.
       canvasContextAttributes: { preserveDrawingBuffer: true },
     })
@@ -279,13 +293,8 @@ export function MapView({
     map.touchZoomRotate.disableRotation()
     map.dragRotate.disable()
 
-    // Bottom-left, above the dock — clear of camera/settings icons.
-    map.addControl(
-      new NavigationControl({ showCompass: false }),
-      'bottom-left',
-    )
-
     const onStyleReady = () => {
+      map.resize()
       map.setBearing(0)
       map.setPitch(0)
       addOverlayLayers(
@@ -297,7 +306,11 @@ export function MapView({
       )
       if (placesRef.current.length > 0) {
         fitMapToPlaces(map, placesRef.current, { animate: false })
+      } else {
+        map.easeTo({ center: [15, 18], zoom: 1.35, duration: 0 })
       }
+      window.setTimeout(() => map.resize(), 50)
+      window.setTimeout(() => map.resize(), 300)
     }
     map.on('style.load', onStyleReady)
 
@@ -326,7 +339,11 @@ export function MapView({
     map.on('touchmove', cancelLongPress)
     map.on('touchend', cancelLongPress)
 
+    const onWindowResize = () => map.resize()
+    window.addEventListener('resize', onWindowResize)
+
     return () => {
+      window.removeEventListener('resize', onWindowResize)
       cancelLongPress()
       onMapReadyRef.current?.(null)
       map.remove()
@@ -368,11 +385,31 @@ export function MapView({
   }, [places])
 
   return (
-    <div
-      ref={containerRef}
-      className="map-view"
-      data-marker-pack={markerPack}
-      aria-label="共同旅行地图"
-    />
+    <>
+      <div
+        ref={containerRef}
+        className="map-view"
+        data-marker-pack={markerPack}
+        aria-label="共同旅行地图"
+      />
+      <div className="map-zoom" role="group" aria-label="地图缩放">
+        <button
+          type="button"
+          className="map-zoom__btn"
+          aria-label="放大"
+          onClick={() => mapRef.current?.zoomIn({ duration: 200 })}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className="map-zoom__btn"
+          aria-label="缩小"
+          onClick={() => mapRef.current?.zoomOut({ duration: 200 })}
+        >
+          −
+        </button>
+      </div>
+    </>
   )
 }
