@@ -1,7 +1,14 @@
-import { LngLatBounds, type Map as MapLibreMap, type PaddingOptions } from 'maplibre-gl'
+import type { Map as LeafletMap } from 'leaflet'
 import type { Place } from '../domain/types'
 
-export function placesBoundsPadding(): PaddingOptions {
+export interface BoundsPadding {
+  top: number
+  bottom: number
+  left: number
+  right: number
+}
+
+export function placesBoundsPadding(): BoundsPadding {
   const topSafe =
     typeof window !== 'undefined'
       ? Number.parseFloat(
@@ -22,7 +29,7 @@ export function placesBoundsPadding(): PaddingOptions {
 
 /** Fit the map so city markers stay clear of notch / bottom card. */
 export function fitMapToPlaces(
-  map: MapLibreMap,
+  map: LeafletMap,
   places: Place[],
   options?: { animate?: boolean },
 ): void {
@@ -35,29 +42,26 @@ export function fitMapToPlaces(
   if (points.length === 0) return
 
   const padding = placesBoundsPadding()
+  const animate = options?.animate !== false
+
   if (points.length === 1) {
     // Zoom in far enough that a city pin reads as a city, not just a lit country.
-    map.easeTo({
-      center: [points[0].lng, points[0].lat],
-      // Land inside the zoom band where city outlines become visible.
-      zoom: Math.max(map.getZoom(), 6.4),
-      bearing: 0,
-      pitch: 0,
-      padding,
-      duration: options?.animate === false ? 0 : 650,
-    })
+    map.setView(
+      [points[0].lat, points[0].lng],
+      Math.max(map.getZoom(), 6.4),
+      { animate, duration: animate ? 0.65 : 0 },
+    )
     return
   }
 
-  const bounds = new LngLatBounds()
-  for (const place of points) {
-    bounds.extend([place.lng, place.lat])
-  }
+  const bounds = points.map(
+    (place) => [place.lat, place.lng] as [number, number],
+  )
   map.fitBounds(bounds, {
-    padding,
+    paddingTopLeft: [padding.left, padding.top],
+    paddingBottomRight: [padding.right, padding.bottom],
     maxZoom: 6.2,
-    bearing: 0,
-    pitch: 0,
-    duration: options?.animate === false ? 0 : 650,
+    animate,
+    duration: animate ? 0.65 : 0,
   })
 }

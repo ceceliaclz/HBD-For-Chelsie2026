@@ -522,38 +522,24 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   border-bottom: 0;
 }
 
-.maplibregl-ctrl-bottom-left,
-.maplibregl-ctrl-top-right,
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
-  display: none !important;
+/* Leaflet: transparent marker chrome + ocean backdrop */
+.map-view.leaflet-container {
+  background: #0a1020;
+  font: inherit;
 }
 
-.maplibregl-ctrl-attrib {
-  display: none !important;
+.leaflet-container .leaflet-pane,
+.leaflet-container .leaflet-top,
+.leaflet-container .leaflet-bottom {
+  z-index: auto;
 }
 
-.maplibregl-ctrl-group {
-  overflow: hidden;
-  border: 1px solid rgba(245, 247, 251, 0.14);
-  border-radius: 12px;
-  background: rgba(28, 36, 54, 0.92) !important;
+.leaflet-div-icon.city-marker-wrap {
+  background: transparent !important;
+  border: none !important;
 }
 
-.maplibregl-ctrl-group button {
-  background-color: transparent !important;
-  background-image: none !important;
-}
-
-.maplibregl-ctrl-icon {
-  filter: invert(1) opacity(0.82);
-}
-
-.maplibregl-ctrl-group button + button {
-  border-top-color: rgba(245, 247, 251, 0.12);
-}
-
-/* Marker wrappers no longer host HTML hearts; keep canvas clipping normal. */
-.home-page .maplibregl-marker {
+.home-page .city-marker-wrap {
   z-index: 3;
 }
 

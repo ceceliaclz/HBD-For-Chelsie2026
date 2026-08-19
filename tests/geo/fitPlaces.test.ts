@@ -25,8 +25,8 @@ describe('fitMapToPlaces', () => {
 
   it('fits bounds for multiple places', () => {
     const fitBounds = vi.fn()
-    const easeTo = vi.fn()
-    const map = { fitBounds, easeTo, getZoom: () => 1.2 } as never
+    const setView = vi.fn()
+    const map = { fitBounds, setView, getZoom: () => 1.2 } as never
 
     fitMapToPlaces(map, [
       place({ lng: 121.47, lat: 31.23 }),
@@ -34,20 +34,20 @@ describe('fitMapToPlaces', () => {
     ], { animate: false })
 
     expect(fitBounds).toHaveBeenCalledTimes(1)
-    expect(easeTo).not.toHaveBeenCalled()
+    expect(setView).not.toHaveBeenCalled()
   })
 
   it('centers a single place', () => {
     const fitBounds = vi.fn()
-    const easeTo = vi.fn()
-    const map = { fitBounds, easeTo, getZoom: () => 1.2 } as never
+    const setView = vi.fn()
+    const map = { fitBounds, setView, getZoom: () => 1.2 } as never
 
     fitMapToPlaces(map, [place({ lng: 121.47, lat: 31.23 })], {
       animate: false,
     })
 
-    expect(easeTo).toHaveBeenCalledTimes(1)
-    expect(easeTo.mock.calls[0]?.[0]?.zoom).toBeGreaterThanOrEqual(6)
+    expect(setView).toHaveBeenCalledTimes(1)
+    expect(setView.mock.calls[0]?.[1]).toBeGreaterThanOrEqual(6)
     expect(fitBounds).not.toHaveBeenCalled()
   })
 })

@@ -1,6 +1,8 @@
 // Country boundaries: Natural Earth 1:110m Admin 0 Countries.
-import type { ExpressionSpecification } from 'maplibre-gl'
 import type { Place, Visitor } from '../domain/types'
+
+/** MapLibre-style expression kept for unit tests / legacy helpers. */
+export type ExpressionSpecification = unknown[] | string
 
 /** Marker / accent colors (bright) — used on cities only. */
 export const VISITOR_COLORS: Record<Visitor, string> = {

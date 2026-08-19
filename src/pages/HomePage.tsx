@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import type { Map as MapLibreMap } from 'maplibre-gl'
+import type { Map as LeafletMap } from 'leaflet'
 import {
   AddPlaceSheet,
   type PlaceSelection,
@@ -40,7 +40,7 @@ export function HomePage({
   const [initialPlace, setInitialPlace] = useState<PlaceSelection | null>(null)
   const [capturing, setCapturing] = useState(false)
   const [captureMessage, setCaptureMessage] = useState('')
-  const mapRef = useRef<MapLibreMap | null>(null)
+  const mapRef = useRef<LeafletMap | null>(null)
   const { places, addPlace, syncStatus } = useBookStore(initialPlaces, {
     syncLifecycle: true,
   })

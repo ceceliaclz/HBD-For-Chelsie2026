@@ -33,7 +33,6 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // MapLibre bundle exceeds Workbox's 2 MiB default precache limit.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: [
           '**/*.{js,css,html}',
@@ -44,7 +43,4 @@ export default defineConfig({
       },
     }),
   ],
-  optimizeDeps: {
-    exclude: ['maplibre-gl'],
-  },
 })

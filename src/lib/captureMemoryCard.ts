@@ -1,6 +1,8 @@
-import { LngLatBounds, type Map as MapLibreMap } from 'maplibre-gl'
+import type { Map as LeafletMap } from 'leaflet'
+import html2canvas from 'html2canvas'
 import { computeStats } from '../domain/stats'
 import type { Place } from '../domain/types'
+import { placesBoundsPadding } from '../geo/fitPlaces'
 
 export function formatCardDate(date = new Date()): string {
   const year = date.getFullYear()
@@ -9,11 +11,11 @@ export function formatCardDate(date = new Date()): string {
   return `${year}.${month}.${day}`
 }
 
-function waitForMapIdle(map: MapLibreMap): Promise<void> {
+function waitForMoveEnd(map: LeafletMap): Promise<void> {
   return new Promise((resolve) => {
-    const done = () => resolve()
-    map.once('idle', done)
-    map.triggerRepaint()
+    map.once('moveend', () => resolve())
+    // If already idle, still resolve on next frame.
+    window.setTimeout(() => resolve(), 400)
   })
 }
 
@@ -24,31 +26,39 @@ async function frame(): Promise<void> {
 }
 
 export async function captureMemoryCard(input: {
-  map: MapLibreMap
+  map: LeafletMap
   places: Place[]
 }): Promise<Blob> {
   const { map, places } = input
 
   if (places.length > 0) {
-    const bounds = new LngLatBounds()
-    for (const place of places) {
-      bounds.extend([place.lng, place.lat])
-    }
+    const padding = placesBoundsPadding()
+    const bounds = places.map(
+      (place) => [place.lat, place.lng] as [number, number],
+    )
     map.fitBounds(bounds, {
-      padding: { top: 72, bottom: 96, left: 48, right: 48 },
+      paddingTopLeft: [padding.left, 72],
+      paddingBottomRight: [padding.right, 96],
       maxZoom: 5,
-      duration: 0,
+      animate: false,
     })
   }
 
-  await waitForMapIdle(map)
+  await waitForMoveEnd(map)
   await frame()
   await frame()
 
-  const mapCanvas = map.getCanvas()
+  const container = map.getContainer()
+  const shot = await html2canvas(container, {
+    backgroundColor: '#0a1020',
+    useCORS: true,
+    logging: false,
+    scale: Math.min(window.devicePixelRatio || 1, 2),
+  })
+
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
-  const mapWidth = mapCanvas.width
-  const mapHeight = mapCanvas.height
+  const mapWidth = shot.width
+  const mapHeight = shot.height
   const headerHeight = Math.round(84 * dpr)
   const footerHeight = Math.round(96 * dpr)
 
@@ -71,25 +81,7 @@ export async function captureMemoryCard(input: {
   ctx.font = `${Math.round(15 * dpr)}px "PingFang SC", "Segoe UI", sans-serif`
   ctx.fillText(formatCardDate(), Math.round(28 * dpr), Math.round(64 * dpr))
 
-  ctx.drawImage(mapCanvas, 0, headerHeight)
-
-  const container = map.getContainer()
-  const containerRect = container.getBoundingClientRect()
-  const scaleX = mapWidth / Math.max(containerRect.width, 1)
-  const scaleY = mapHeight / Math.max(containerRect.height, 1)
-
-  container.querySelectorAll<HTMLElement>('.city-marker').forEach((element) => {
-    const rect = element.getBoundingClientRect()
-    const glyph =
-      element.querySelector('.city-marker__glyph')?.textContent?.trim() || '✦'
-    const x = (rect.left + rect.width / 2 - containerRect.left) * scaleX
-    const y =
-      (rect.top + rect.height / 2 - containerRect.top) * scaleY + headerHeight
-    ctx.font = `${Math.round(30 * dpr)}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(glyph, x, y)
-  })
+  ctx.drawImage(shot, 0, headerHeight)
 
   const stats = computeStats(places)
   ctx.textAlign = 'left'
