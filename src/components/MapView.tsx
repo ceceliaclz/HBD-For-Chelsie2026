@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css'
 import type { MarkerPack, Place, Visitor } from '../domain/types'
 import {
   cityAuraGeoJson,
-  cityPlacesForFilter,
+  placesForPins,
 } from '../geo/cityPoints'
 import {
   countryBorderColor,
@@ -67,6 +67,7 @@ function featureCountryCode(
 }
 
 function markerLabel(place: Place): string {
+  if (place.placeType === 'country') return place.name === 'United States' ? '美国' : place.name
   const hit = searchCities(place.name, 12).find(
     (candidate) =>
       candidate.countryCode === place.countryCode &&
@@ -214,7 +215,7 @@ export function MapView({
 
     const markers = L.layerGroup().addTo(map)
     markersLayerRef.current = markers
-    for (const place of cityPlacesForFilter(
+    for (const place of placesForPins(
       placesRef.current,
       filterRef.current,
     )) {
@@ -315,7 +316,7 @@ export function MapView({
     )
 
     markers.clearLayers()
-    for (const place of cityPlacesForFilter(places, filter)) {
+    for (const place of placesForPins(places, filter)) {
       addPlaceMarker(markers, place)
     }
   }, [places, filter])

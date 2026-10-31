@@ -20,6 +20,7 @@ import {
   pushDirtyPlaces,
   rebindPlacesToBook,
   resumeSharedBook,
+  ORIGINAL_COUPLE_BOOK_ID,
   syncNow,
 } from '../sync/syncEngine'
 import { getSupabase } from '../sync/supabaseClient'
@@ -78,11 +79,11 @@ export async function openSharedCoupleBook(role: Role): Promise<BookSession> {
     role,
     deviceToken: await getDeviceToken(),
   })
-  const sameBook = localBook?.id === book.id
-  const nextPlaces = sameBook
+  const carryLocalPlaces = localBook?.id === book.id || localBook?.id === ORIGINAL_COUPLE_BOOK_ID
+  const nextPlaces = carryLocalPlaces
     ? mergePlacesByUpdatedAt(rebindPlacesToBook(localPlaces, book.id), remotePlaces)
     : remotePlaces
-  if (sameBook) await pushDirtyPlaces(book.id, nextPlaces)
+  if (carryLocalPlaces) await pushDirtyPlaces(book.id, nextPlaces)
   await saveSession(book, member)
   await replaceAllPlaces(nextPlaces)
   return { book, member }

@@ -56,6 +56,7 @@ export class BookFullError extends Error {
 }
 
 export const SHARED_INVITE_CODE = 'X5MPHP'
+export const ORIGINAL_COUPLE_BOOK_ID = 'e5913c24-8892-45e9-a134-1951e064ea12'
 
 export async function resumeSharedBook(input: {
   role: Role

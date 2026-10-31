@@ -3,6 +3,7 @@ import {
   cityAuraGeoJson,
   cityPlacesForFilter,
   heartRing,
+  placesForPins,
 } from '../../src/geo/cityPoints'
 import type { Place } from '../../src/domain/types'
 
@@ -28,6 +29,21 @@ describe('cityPoints', () => {
       },
     ]
     expect(cityPlacesForFilter(places, 'all')).toHaveLength(1)
+  })
+
+  it('keeps a country pin so its visit date can show', () => {
+    const places = [
+      place({ name: '南京', lng: 118.78, lat: 32.06 }),
+      {
+        ...place({ name: '美国', lng: -98.5, lat: 39.8, id: 'us' }),
+        placeType: 'country' as const,
+        countryCode: 'US',
+        visitor: 'dog' as const,
+        visitedOn: '2024-07-04',
+      },
+    ]
+    expect(placesForPins(places, 'all').map((item) => item.name)).toEqual(['南京', '美国'])
+    expect(placesForPins(places, 'dog').map((item) => item.visitedOn)).toEqual(['2024-07-04'])
   })
 
   it('builds a closed heart ring for city outlines', () => {

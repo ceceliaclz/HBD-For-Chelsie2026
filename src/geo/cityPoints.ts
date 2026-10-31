@@ -13,6 +13,13 @@ export function cityPlacesForFilter(
   )
 }
 
+export function placesForPins(
+  places: Place[],
+  filter: Visitor | 'all',
+): Place[] {
+  return places.filter((place) => filter === 'all' || place.visitor === filter)
+}
+
 export function cityPointsGeoJson(
   places: Place[],
   filter: Visitor | 'all',

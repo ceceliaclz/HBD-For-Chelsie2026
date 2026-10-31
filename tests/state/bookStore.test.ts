@@ -5,6 +5,7 @@ import {
   listPlaces,
   loadBook,
   loadMember,
+  saveSession,
   upsertPlace,
 } from '../../src/storage/localDb'
 
@@ -20,6 +21,7 @@ const syncMocks = vi.hoisted(() => ({
   rebindPlacesToBook: vi.fn((places: Array<Record<string, unknown>>, bookId: string) =>
     places.map((place) => ({ ...place, bookId }))),
   resumeSharedBook: vi.fn(),
+  ORIGINAL_COUPLE_BOOK_ID: 'e5913c24-8892-45e9-a134-1951e064ea12',
   syncNow: vi.fn(),
 }))
 
@@ -198,6 +200,65 @@ describe('book onboarding actions', () => {
     expect(syncMocks.pushDirtyPlaces).not.toHaveBeenCalled()
     expect(await listPlaces()).toEqual([
       expect.objectContaining({ name: '南京', visitedOn: '2019-02-01' }),
+    ])
+  })
+
+  it('uploads a place saved on the original shared book, including its date', async () => {
+    const originalBook = {
+      id: 'e5913c24-8892-45e9-a134-1951e064ea12',
+      inviteCode: '4XGECV',
+      markerPack: 'stars' as const,
+      createdAt: '2026-08-13T05:07:52.061Z',
+    }
+    await saveSession(originalBook, {
+      id: 'dog-member',
+      bookId: originalBook.id,
+      role: 'dog',
+      deviceToken: 'jiujiu-phone',
+      joinedAt: '2026-08-13T05:17:38.448Z',
+    })
+    await upsertPlace({
+      id: 'united-states',
+      bookId: originalBook.id,
+      placeType: 'country',
+      name: '美国',
+      countryCode: 'US',
+      lat: 39.8,
+      lng: -98.5,
+      visitor: 'dog',
+      visitedOn: '2024-07-04',
+      updatedAt: '2026-10-31T12:00:00.000Z',
+    })
+    const sharedBook = {
+      id: 'shared-book',
+      inviteCode: 'X5MPHP',
+      markerPack: 'stars' as const,
+      createdAt: '2026-08-13T11:38:42.613Z',
+    }
+    syncMocks.resumeSharedBook.mockResolvedValue({
+      book: sharedBook,
+      member: {
+        id: 'dog-member',
+        bookId: sharedBook.id,
+        role: 'dog',
+        deviceToken: 'jiujiu-phone',
+        joinedAt: '2026-08-19T12:01:34.870Z',
+      },
+      places: [],
+    })
+
+    await openSharedCoupleBook('dog')
+
+    expect(syncMocks.pushDirtyPlaces).toHaveBeenCalledWith(
+      sharedBook.id,
+      [expect.objectContaining({
+        name: '美国',
+        visitedOn: '2024-07-04',
+        bookId: sharedBook.id,
+      })],
+    )
+    expect(await listPlaces()).toEqual([
+      expect.objectContaining({ name: '美国', visitedOn: '2024-07-04' }),
     ])
   })
 })
