@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Place } from '../domain/types'
 import { visitorLabel } from '../domain/roleLabels'
+import { isWish, wishMark } from '../domain/wishes'
 
 interface DraftPhoto {
   file: File
@@ -13,11 +14,13 @@ export function PlacePhotoSheet({
   onClose,
   onAddPhotos,
   onVisitedOnChange,
+  onMakeVisited,
 }: {
   place: Place
   onClose: () => void
   onAddPhotos: (files: File[]) => void
   onVisitedOnChange: (visitedOn: string) => void
+  onMakeVisited: () => void
 }) {
   const photos = place.photos ?? []
   const [drafts, setDrafts] = useState<DraftPhoto[]>([])
@@ -58,7 +61,24 @@ export function PlacePhotoSheet({
     <section className="place-sheet" aria-label={place.name}>
       <div className="place-sheet__grab" />
       <h2>{place.name}</h2>
-      <p className="place-sheet__meta">{visitorLabel(place.visitor)}</p>
+      <p className="place-sheet__meta">
+        {isWish(place)
+          ? wishMark(place)
+          : visitorLabel(place.visitor)}
+      </p>
+      {isWish(place) && (
+        <p className="place-sheet__empty">{place.wishNote?.trim() || '还没写为什么想去'}</p>
+      )}
+      {!isWish(place) && place.wishNote?.trim() && (
+        <p className="place-sheet__empty">{place.wishNote.trim()}</p>
+      )}
+      {isWish(place) ? (
+        <>
+          <button type="button" className="place-sheet__add" onClick={onMakeVisited}>记成去过</button>
+          <button type="button" className="place-sheet__close" onClick={onClose}>关闭</button>
+        </>
+      ) : (
+        <>
       <label className="place-sheet__date">
         <span>到访日期，可以改</span>
         <input
@@ -118,6 +138,8 @@ export function PlacePhotoSheet({
         />
       </label>
       <button type="button" className="place-sheet__close" onClick={onClose}>关闭</button>
+        </>
+      )}
     </section>
   )
 }

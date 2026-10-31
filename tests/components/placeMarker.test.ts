@@ -15,6 +15,13 @@ const place: Place = {
 }
 
 describe('placeMarkerHtml', () => {
+  it('draws a wish as an empty mark instead of a visit', () => {
+    const marker = placeMarkerHtml({ ...place, status: 'wish', visitor: 'together' })
+    expect(marker.html).toContain('pin--wish')
+    expect(marker.html).toContain('都想去')
+    expect(marker.html).not.toContain('pin__shot')
+  })
+
   it('shows one photo as a single print', () => {
     const marker = placeMarkerHtml({ ...place, photos: ['https://example.test/a.jpg'] })
     expect(marker.html).not.toContain('pin--stack')

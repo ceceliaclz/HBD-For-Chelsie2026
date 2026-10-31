@@ -1,5 +1,6 @@
 // Country boundaries: Natural Earth 1:110m Admin 0 Countries.
-import type { Place, Visitor } from '../domain/types'
+import type { Place, PlaceFilter, Visitor } from '../domain/types'
+import { isWish } from '../domain/wishes'
 
 /** MapLibre-style expression kept for unit tests / legacy helpers. */
 export type ExpressionSpecification = unknown[] | string
@@ -70,11 +71,13 @@ export function countryBorderColor(countryCode: string): string {
 
 export function visitedCountryCodes(
   places: Place[],
-  filter: Visitor | 'all',
+  filter: PlaceFilter,
 ): Set<string> {
   const codes = new Set<string>()
+  if (filter === 'wish') return codes
 
   for (const place of places) {
+    if (isWish(place)) continue
     const code = normalizedCountryCode(place.countryCode)
     if (code && (filter === 'all' || place.visitor === filter)) {
       codes.add(code)
@@ -86,11 +89,12 @@ export function visitedCountryCodes(
 
 export function dominantVisitorsByCountry(
   places: Place[],
-  filter: Visitor | 'all',
+  filter: PlaceFilter,
 ): Map<string, Visitor> {
   const visitors = new Map<string, Set<Visitor>>()
 
   for (const place of places) {
+    if (isWish(place) || filter === 'wish') continue
     const code = normalizedCountryCode(place.countryCode)
     if (!code || (filter !== 'all' && place.visitor !== filter)) continue
 

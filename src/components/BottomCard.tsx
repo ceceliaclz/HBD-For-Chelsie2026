@@ -1,14 +1,13 @@
 import { computeStats } from '../domain/stats'
-import type { Place, Visitor } from '../domain/types'
+import type { Place, PlaceFilter } from '../domain/types'
 import { IconPlus } from './icons'
-
-type PlaceFilter = Visitor | 'all'
 
 const FILTERS: Array<{ value: PlaceFilter; label: string }> = [
   { value: 'all', label: '全部' },
   { value: 'rabbit', label: '兔子' },
   { value: 'dog', label: '啾啾' },
   { value: 'together', label: '一起' },
+  { value: 'wish', label: '心愿' },
 ]
 
 export interface BottomCardProps {

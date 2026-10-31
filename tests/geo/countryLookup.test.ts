@@ -78,6 +78,13 @@ describe('visitedCountryCodes', () => {
 
     expect([...visitedCountryCodes(places, 'all')]).toEqual(['JP'])
   })
+
+  it('does not paint a country just because it is on the wish list', () => {
+    const places = [
+      { ...place('JP', 'rabbit'), status: 'wish' as const },
+    ]
+    expect([...visitedCountryCodes(places, 'all')]).toEqual([])
+  })
 })
 
 describe('dominantVisitorsByCountry', () => {

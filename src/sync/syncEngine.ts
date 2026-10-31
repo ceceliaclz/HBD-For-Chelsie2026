@@ -5,6 +5,7 @@ import {
   loadMember,
   replaceAllPlaces,
 } from '../storage/localDb'
+import { isWish, mergeSamePlace } from '../domain/wishes'
 import { getSupabase } from './supabaseClient'
 
 interface BookRow {
@@ -32,6 +33,8 @@ interface PlaceRow {
   lng: number
   visitor: Place['visitor']
   visited_on: string | null
+  status?: Place['status']
+  wish_note?: string | null
   updated_at: string
 }
 
@@ -150,6 +153,8 @@ function toPlace(row: PlaceRow): Place {
     lat: row.lat,
     lng: row.lng,
     visitor: row.visitor,
+    ...(row.status === 'wish' ? { status: 'wish' as const } : {}),
+    ...(row.wish_note ? { wishNote: row.wish_note } : {}),
     ...(row.visited_on ? { visitedOn: row.visited_on } : {}),
     updatedAt: row.updated_at,
   }
@@ -183,6 +188,12 @@ export function mergePlacesByUpdatedAt(
       continue
     }
     const incomingWins = Date.parse(place.updatedAt) > Date.parse(existing.updatedAt)
+    if (isWish(existing) || isWish(place)) {
+      const newer = incomingWins ? place : existing
+      const older = incomingWins ? existing : place
+      merged.set(key, mergeSamePlace(older, newer))
+      continue
+    }
     const winner = incomingWins ? place : existing
     const other = incomingWins ? existing : place
     const photos = winner.photos?.length ? winner.photos : other.photos
@@ -315,22 +326,39 @@ export async function joinBookRemote(input: {
   return { book: toBook(bookRow), members: [...members, joiningMember] }
 }
 
+async function wishColumnsReady(supabase: NonNullable<ReturnType<typeof getSupabase>>): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('places').select('status').limit(1)
+    return !error
+  } catch {
+    return false
+  }
+}
+
 export async function pushDirtyPlaces(bookId: string, places: Place[]): Promise<void> {
   const supabase = getSupabase()
   if (!supabase || places.length === 0) return
 
-  const rows = places.map((place) => ({
-    id: place.id,
-    book_id: bookId,
-    place_type: place.placeType,
-    name: place.name,
-    country_code: place.countryCode,
-    lat: place.lat,
-    lng: place.lng,
-    visitor: place.visitor,
-    visited_on: place.visitedOn ?? null,
-    updated_at: place.updatedAt,
-  }))
+  const shareWishes = await wishColumnsReady(supabase)
+  const rows = places
+    .filter((place) => shareWishes || !isWish(place))
+    .map((place) => ({
+      id: place.id,
+      book_id: bookId,
+      place_type: place.placeType,
+      name: place.name,
+      country_code: place.countryCode,
+      lat: place.lat,
+      lng: place.lng,
+      visitor: place.visitor,
+      visited_on: place.visitedOn ?? null,
+      ...(shareWishes ? {
+        status: place.status === 'wish' ? 'wish' : 'visited',
+        wish_note: place.wishNote ?? null,
+      } : {}),
+      updated_at: place.updatedAt,
+    }))
+  if (rows.length === 0) return
   const { error } = await supabase
     .from('places')
     .upsert(rows, { onConflict: 'book_id,place_type,country_code,name' })

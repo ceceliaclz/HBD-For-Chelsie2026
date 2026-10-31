@@ -91,6 +91,27 @@ describe('mergePlacesByUpdatedAt', () => {
 
     expect(merged).toEqual([{ ...remote, photos: localWithPhotos.photos }])
   })
+
+  it('keeps a visit when a newer wish arrives, and merges two wishes into 都想去', () => {
+    const wish: Place = {
+      ...localPlace,
+      id: 'wish-id',
+      status: 'wish',
+      visitor: 'dog',
+      wishNote: '想看雪',
+      updatedAt: '2026-02-01T00:00:00.000Z',
+    }
+    const kept = mergePlacesByUpdatedAt([localPlace], [wish])
+    expect(kept[0]?.status).not.toBe('wish')
+    expect(kept[0]?.visitor).toBe('rabbit')
+    expect(kept[0]?.wishNote).toBe('想看雪')
+
+    const rabbitWish: Place = { ...wish, id: 'w1', visitor: 'rabbit', updatedAt: '2026-01-01T00:00:00.000Z' }
+    const dogWish: Place = { ...wish, id: 'w2', visitor: 'dog', updatedAt: '2026-03-01T00:00:00.000Z' }
+    const both = mergePlacesByUpdatedAt([rabbitWish], [dogWish])
+    expect(both[0]?.status).toBe('wish')
+    expect(both[0]?.visitor).toBe('together')
+  })
 })
 
 describe('rebindPlacesToBook', () => {

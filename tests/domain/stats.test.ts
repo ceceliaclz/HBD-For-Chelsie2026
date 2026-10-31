@@ -22,4 +22,16 @@ describe('computeStats', () => {
       togetherCount: 1,
     })
   })
+
+  it('does not count a wish as a visited city or country', () => {
+    const places: Place[] = [
+      { ...base, id: '1', placeType: 'city', name: 'Tokyo', countryCode: 'JP', visitor: 'together' },
+      { ...base, id: '2', placeType: 'city', name: 'Kyoto', countryCode: 'JP', visitor: 'rabbit', status: 'wish' },
+    ]
+    expect(computeStats(places)).toEqual({
+      countryCount: 1,
+      cityCount: 1,
+      togetherCount: 1,
+    })
+  })
 })

@@ -198,8 +198,10 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     hit: CityHit & { placeType: Place['placeType'] },
     visitor: Visitor,
     visitedOn?: string,
+    wish?: { note?: string },
   ) => {
     const book = await loadBook()
+    const note = wish?.note?.trim()
     await upsertPlace({
       id: newId(),
       bookId: book?.id ?? DEV_BOOK_ID,
@@ -210,7 +212,9 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
       lat: hit.lat,
       lng: hit.lng,
       visitor,
-      ...(visitedOn ? { visitedOn } : {}),
+      ...(wish ? { status: 'wish' as const } : {}),
+      ...(note ? { wishNote: note } : {}),
+      ...(!wish && visitedOn ? { visitedOn } : {}),
       updatedAt: new Date().toISOString(),
     })
     setPlaces(await listPlaces())
@@ -228,6 +232,16 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     })
     setPlaces(await listPlaces())
   }, [])
+
+  const makeVisited = useCallback(async (placeId: string) => {
+    const current = (await listPlaces()).find((place) => place.id === placeId)
+    if (!current || current.status !== 'wish') return
+    const next: Place = { ...current, updatedAt: new Date().toISOString() }
+    delete next.status
+    await writePlace(next)
+    setPlaces(await listPlaces())
+    await runSync()
+  }, [runSync])
 
   const updateVisitedOn = useCallback(async (placeId: string, visitedOn: string) => {
     await changePlaceVisitedOn(placeId, visitedOn)
@@ -271,6 +285,7 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     addPlace,
     attachPhotos,
     updateVisitedOn,
+    makeVisited,
     createBook,
     joinBook,
     openShared,

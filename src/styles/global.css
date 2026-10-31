@@ -907,11 +907,18 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   box-shadow: 2px 3px 0 #f3c7b4;
   line-height: 1;
 }
+.filter-chips { flex-wrap: wrap; }
 .filter-chip[aria-pressed="true"] {
   background: #ffe4d6;
   color: #e25d4a;
   border-style: solid;
   font-weight: 700;
+}
+.filter-chip--wish[aria-pressed="true"] {
+  background: #fffdf8;
+  color: #8a7040;
+  border-style: dashed;
+  border-color: #b9a36a;
 }
 .home-dock__cta {
   display: inline-flex;
@@ -956,7 +963,12 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 }
 .city-marker-wrap { background: transparent; border: 0; }
 .pin { position: relative; pointer-events: auto; }
-.pin--empty { width: auto; min-width: 72px; height: auto; min-height: 58px; display: flex; flex-direction: column; align-items: center; }
+.pin--empty, .pin--wish { width: auto; min-width: 72px; height: auto; min-height: 58px; display: flex; flex-direction: column; align-items: center; }
+.pin--wish .pin__mark {
+  background: transparent;
+  color: #8a7040;
+  border-color: #b9a36a;
+}
 .pin__mark {
   width: 52px; height: 28px; border-radius: 14px;
   display: flex; align-items: center; justify-content: center;

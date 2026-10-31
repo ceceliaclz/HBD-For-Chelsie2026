@@ -1,28 +1,33 @@
-import type { Place, Visitor } from '../domain/types'
+import type { Place, PlaceFilter } from '../domain/types'
+import { isWish } from '../domain/wishes'
 
 const EARTH_RADIUS_KM = 6371.0088
 
+function matchesPlaceFilter(place: Place, filter: PlaceFilter): boolean {
+  if (filter === 'wish') return isWish(place)
+  if (isWish(place)) return false
+  return filter === 'all' || place.visitor === filter
+}
+
 export function cityPlacesForFilter(
   places: Place[],
-  filter: Visitor | 'all',
+  filter: PlaceFilter,
 ): Place[] {
   return places.filter(
-    (place) =>
-      place.placeType === 'city' &&
-      (filter === 'all' || place.visitor === filter),
+    (place) => place.placeType === 'city' && matchesPlaceFilter(place, filter),
   )
 }
 
 export function placesForPins(
   places: Place[],
-  filter: Visitor | 'all',
+  filter: PlaceFilter,
 ): Place[] {
-  return places.filter((place) => filter === 'all' || place.visitor === filter)
+  return places.filter((place) => matchesPlaceFilter(place, filter))
 }
 
 export function cityPointsGeoJson(
   places: Place[],
-  filter: Visitor | 'all',
+  filter: PlaceFilter,
 ) {
   return {
     type: 'FeatureCollection' as const,
@@ -83,7 +88,7 @@ export function heartRing(
 
 export function cityAuraGeoJson(
   places: Place[],
-  filter: Visitor | 'all',
+  filter: PlaceFilter,
   scaleKm = 14,
 ) {
   return {

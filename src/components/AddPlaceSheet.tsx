@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import type { Visitor } from '../domain/types'
+import type { Role, Visitor } from '../domain/types'
 import { formatCityLabel, searchCities, type CityHit } from '../geo/citySearch'
 import { visitorEmoji, visitorLabel } from '../domain/roleLabels'
 
@@ -9,8 +9,14 @@ export interface AddPlaceSheetProps {
   open: boolean
   onClose(): void
   defaultVisitor: Visitor
+  memberRole?: Role
   initialPlace?: PlaceSelection | null
-  onSubmit(hit: PlaceSelection, visitor: Visitor, visitedOn?: string): Promise<void>
+  onSubmit(
+    hit: PlaceSelection,
+    visitor: Visitor,
+    visitedOn?: string,
+    wish?: { note?: string },
+  ): Promise<void>
 }
 
 export interface PlaceSelection extends CityHit {
@@ -21,13 +27,16 @@ export function AddPlaceSheet({
   open,
   onClose,
   defaultVisitor,
+  memberRole,
   initialPlace,
   onSubmit,
 }: AddPlaceSheetProps) {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<PlaceSelection | null>(null)
+  const [kind, setKind] = useState<'visited' | 'wish'>('visited')
   const [visitor, setVisitor] = useState<Visitor>(defaultVisitor)
   const [visitedOn, setVisitedOn] = useState('')
+  const [wishNote, setWishNote] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const results = searchCities(query)
@@ -40,8 +49,10 @@ export function AddPlaceSheet({
     if (!open) return
     setQuery(initialPlace?.name ?? '')
     setSelected(initialPlace ?? null)
+    setKind('visited')
     setVisitor(defaultVisitor)
     setVisitedOn('')
+    setWishNote('')
     setSaving(false)
     setSaveError('')
   }, [open, defaultVisitor, initialPlace])
@@ -54,7 +65,11 @@ export function AddPlaceSheet({
     setSaving(true)
     setSaveError('')
     try {
-      await onSubmit(selected, visitor, visitedOn || undefined)
+      if (kind === 'wish') {
+        await onSubmit(selected, visitor, undefined, { note: wishNote })
+      } else {
+        await onSubmit(selected, visitor, visitedOn || undefined)
+      }
       onClose()
     } catch {
       setSaveError('这次没能点亮，请检查网络后再试')
@@ -75,8 +90,8 @@ export function AddPlaceSheet({
         <div className="add-place-sheet__handle" aria-hidden="true" />
         <header className="add-place-sheet__header">
           <div>
-            <p>NEW MEMORY</p>
-            <h2 id="add-place-title">点亮一座城市</h2>
+            <p>{kind === 'wish' ? 'A WISH' : 'NEW MEMORY'}</p>
+            <h2 id="add-place-title">{kind === 'wish' ? '想去一个地方' : '点亮一座城市'}</h2>
           </div>
           <button type="button" className="sheet-close" aria-label="关闭" onClick={onClose}>×</button>
         </header>
@@ -141,7 +156,35 @@ export function AddPlaceSheet({
           </div>
 
           <fieldset className="visitor-picker">
-            <legend>谁去过这里？</legend>
+            <legend>{kind === 'wish' ? '这是' : '记下'}</legend>
+            <div>
+              <button
+                type="button"
+                className="visitor-choice"
+                aria-pressed={kind === 'visited'}
+                onClick={() => {
+                  setKind('visited')
+                  setVisitor(defaultVisitor)
+                }}
+              >
+                去过
+              </button>
+              <button
+                type="button"
+                className="visitor-choice"
+                aria-pressed={kind === 'wish'}
+                onClick={() => {
+                  setKind('wish')
+                  if (memberRole === 'rabbit' || memberRole === 'dog') setVisitor(memberRole)
+                }}
+              >
+                想去
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset className="visitor-picker">
+            <legend>{kind === 'wish' ? '谁想去？' : '谁去过这里？'}</legend>
             <div>
               {VISITORS.map((item) => (
                 <button
@@ -157,19 +200,33 @@ export function AddPlaceSheet({
             </div>
           </fieldset>
 
-          <label className="date-field">
-            <span>到访日期（可选）</span>
-            <input
-              type="date"
-              value={visitedOn}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(event) => setVisitedOn(event.target.value)}
-            />
-          </label>
+          {kind === 'wish' ? (
+            <label className="date-field">
+              <span>为什么想去（可选）</span>
+              <input
+                type="text"
+                value={wishNote}
+                maxLength={80}
+                placeholder="一句话就好"
+                onChange={(event) => setWishNote(event.target.value)}
+              />
+            </label>
+          ) : (
+            <label className="date-field">
+              <span>到访日期（可选）</span>
+              <input
+                type="date"
+                value={visitedOn}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(event) => setVisitedOn(event.target.value)}
+              />
+            </label>
+          )}
 
           {saveError && <p className="form-error" role="alert">{saveError}</p>}
           <button className="light-place-button" type="submit" disabled={!selected || saving}>
-            <span aria-hidden="true">✦</span>{saving ? '正在点亮…' : '点亮'}
+            <span aria-hidden="true">✦</span>
+            {saving ? '正在记下…' : kind === 'wish' ? '记下心愿' : '点亮'}
           </button>
         </form>
       </section>

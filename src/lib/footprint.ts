@@ -1,11 +1,14 @@
 import L from 'leaflet'
-import type { Place, Visitor } from '../domain/types'
+import type { Place, PlaceFilter } from '../domain/types'
+import { isWish } from '../domain/wishes'
 
-export function datedStops(places: Place[], filter: Visitor | 'all'): Place[] {
+export function datedStops(places: Place[], filter: PlaceFilter): Place[] {
   return places
     .filter((place) => (
       place.placeType === 'city'
+      && !isWish(place)
       && Boolean(place.visitedOn)
+      && filter !== 'wish'
       && (filter === 'all' || place.visitor === filter)
     ))
     .sort((a, b) => (a.visitedOn ?? '').localeCompare(b.visitedOn ?? ''))

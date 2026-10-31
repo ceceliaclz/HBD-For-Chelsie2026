@@ -9,7 +9,7 @@ import { IconCamera, IconSettings } from '../components/icons'
 import { MapView } from '../components/MapView'
 import { PlacePhotoSheet } from '../components/PlacePhotoSheet'
 import { SettingsSheet } from '../components/SettingsSheet'
-import type { CoupleBook, MarkerPack, Member, Place, Visitor } from '../domain/types'
+import type { CoupleBook, MarkerPack, Member, Place, PlaceFilter } from '../domain/types'
 import { approxPlaceFromLngLat } from '../geo/reverseApprox'
 import {
   captureMemoryCard,
@@ -22,7 +22,7 @@ import { useBookStore } from '../state/bookStore'
 
 export interface HomePageProps {
   places?: Place[]
-  filter?: Visitor | 'all'
+  filter?: PlaceFilter
   markerPack?: MarkerPack
   book?: CoupleBook
   member?: Member
@@ -37,7 +37,7 @@ export function HomePage({
   member,
   onBookChange,
 }: HomePageProps) {
-  const [filter, setFilter] = useState<Visitor | 'all'>(initialFilter)
+  const [filter, setFilter] = useState<PlaceFilter>(initialFilter)
   const [addPlaceOpen, setAddPlaceOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [initialPlace, setInitialPlace] = useState<PlaceSelection | null>(null)
@@ -52,7 +52,7 @@ export function HomePage({
   const mapRef = useRef<LeafletMap | null>(null)
   const routeRef = useRef<L.LayerGroup | null>(null)
   const playToken = useRef(0)
-  const { places, addPlace, attachPhotos, updateVisitedOn, syncStatus } = useBookStore(initialPlaces, {
+  const { places, addPlace, attachPhotos, updateVisitedOn, makeVisited, syncStatus } = useBookStore(initialPlaces, {
     syncLifecycle: true,
   })
   const selected = places.find((place) => place.id === selectedId) ?? null
@@ -303,6 +303,9 @@ export function HomePage({
           onVisitedOnChange={(visitedOn) => {
             void updateVisitedOn(selected.id, visitedOn)
           }}
+          onMakeVisited={() => {
+            void makeVisited(selected.id)
+          }}
         />
       )}
 
@@ -329,10 +332,11 @@ export function HomePage({
       <AddPlaceSheet
         open={addPlaceOpen}
         defaultVisitor="together"
+        memberRole={member?.role}
         initialPlace={initialPlace}
         onClose={() => setAddPlaceOpen(false)}
-        onSubmit={async (hit, visitor, visitedOn) => {
-          await addPlace(hit, visitor, visitedOn)
+        onSubmit={async (hit, visitor, visitedOn, wish) => {
+          await addPlace(hit, visitor, visitedOn, wish)
         }}
       />
     </main>

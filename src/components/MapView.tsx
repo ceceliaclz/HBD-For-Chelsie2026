@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import type { MarkerPack, Place, Visitor } from '../domain/types'
+import type { MarkerPack, Place, PlaceFilter, Visitor } from '../domain/types'
+import { isWish, wishMark } from '../domain/wishes'
 import {
   cityAuraGeoJson,
   placesForPins,
@@ -33,7 +34,7 @@ const VISITOR_PIN: Record<Visitor, string> = {
 
 export interface MapViewProps {
   places: Place[]
-  filter: Visitor | 'all'
+  filter: PlaceFilter
   markerPack: MarkerPack
   onLongPress: (lngLat: { lng: number; lat: number }) => void
   onPlaceOpen?: (place: Place) => void
@@ -89,6 +90,13 @@ export function placeMarkerHtml(place: Place): { html: string; iconSize: [number
   const label = escapeHtml(markerLabel(place))
   const when = place.visitedOn ? `<span class="pin__date">${escapeHtml(place.visitedOn)}</span>` : ''
   const color = VISITOR_PIN[place.visitor]
+  if (isWish(place)) {
+    return {
+      html: `<div class="pin pin--wish" style="--pin:${color}"><span class="pin__mark">${wishMark(place)}</span><span class="pin__name">${label}</span></div>`,
+      iconSize: [96, 58],
+      iconAnchor: [48, 28],
+    }
+  }
   const photos = place.photos ?? []
   if (!photos.length) {
     return {

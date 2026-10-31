@@ -1,6 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { CoupleBook, Member, Place } from '../domain/types'
 import { mergeVisitor } from '../domain/visitorUpgrade'
+import { isWish, mergeSamePlace } from '../domain/wishes'
 import { newId } from '../lib/id'
 import { META_KEYS, placeKey } from './keys'
 
@@ -80,13 +81,15 @@ export async function upsertPlace(incoming: Place): Promise<Place> {
   const existing = all.find((p) => placeKey(p) === key)
 
   if (existing) {
-    const merged: Place = {
-      ...existing,
-      ...incoming,
-      id: existing.id,
-      visitor: mergeVisitor(existing.visitor, incoming.visitor),
-      updatedAt: incoming.updatedAt,
-    }
+    const merged: Place = isWish(existing) || isWish(incoming)
+      ? { ...mergeSamePlace(existing, incoming), id: existing.id }
+      : {
+          ...existing,
+          ...incoming,
+          id: existing.id,
+          visitor: mergeVisitor(existing.visitor, incoming.visitor),
+          updatedAt: incoming.updatedAt,
+        }
     await db.put('places', merged)
     return merged
   }

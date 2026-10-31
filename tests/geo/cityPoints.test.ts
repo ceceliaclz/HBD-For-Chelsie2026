@@ -46,6 +46,16 @@ describe('cityPoints', () => {
     expect(placesForPins(places, 'dog').map((item) => item.visitedOn)).toEqual(['2024-07-04'])
   })
 
+  it('hides wishes until the wish filter is on, and never fills them into visited pins', () => {
+    const places = [
+      place({ name: '南京', lng: 118.78, lat: 32.06 }),
+      place({ name: '京都', lng: 135.76, lat: 35.01, id: 'kyoto', status: 'wish', visitor: 'rabbit' }),
+    ]
+    expect(placesForPins(places, 'all').map((item) => item.name)).toEqual(['南京'])
+    expect(placesForPins(places, 'wish').map((item) => item.name)).toEqual(['京都'])
+    expect(cityPlacesForFilter(places, 'all')).toHaveLength(1)
+  })
+
   it('builds a closed heart ring for city outlines', () => {
     const ring = heartRing(118.78, 32.06, 14, 36)
     expect(ring.length).toBe(37)
