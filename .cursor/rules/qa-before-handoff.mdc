@@ -1,0 +1,18 @@
+---
+description: 改完我们的地图后先跑测试 agent，通过了再告诉用户
+alwaysApply: true
+---
+
+# 测试 agent
+
+改了地图功能后，先自己测，通过了再叫用户。
+
+```bash
+export PATH="/Users/yanmutong/.nvm/versions/node/v24.22.1/bin:$PATH"
+./node_modules/.bin/vitest run
+node scripts/qa-agent.mjs
+```
+
+`qa-agent.mjs` 会打开真实页面，检查：兔子链接能进共用地图而不是一直闪、12 个地方和已有日期都在、洛杉矶日期仍是 2026-10-04、照片先点选再添加、封面是手账纸色。
+
+没通过就修，再跑，直到退出码是 0。不要把没测过的链接交给用户。测试时不要改云端日期，不要把测试图片加进地点。

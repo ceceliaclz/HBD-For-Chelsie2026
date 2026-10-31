@@ -4,6 +4,7 @@ import { Onboarding } from './components/Onboarding'
 import { HomePage } from './pages/HomePage'
 import { JoinPage } from './pages/JoinPage'
 import type { Place, Role } from './domain/types'
+import { canShowSharedMap } from './sharedGate'
 import { useBookStore } from './state/bookStore'
 import { SHARED_INVITE_CODE } from './sync/syncEngine'
 
@@ -67,22 +68,47 @@ function RootPage() {
   const roleMismatch = autoRole !== null && member !== null && member.role !== autoRole
   const needShared = (autoRole !== null && book === null) || wrongBook || roleMismatch
   const sharedRole: Role = autoRole ?? member?.role ?? 'rabbit'
+  const showingShared = book !== null && member !== null && canShowSharedMap(ready, book.inviteCode)
 
   useEffect(() => {
     if (!ready || !needShared || enterError) return
     let cancelled = false
-    void openShared(sharedRole).catch((error: unknown) => {
-      if (cancelled) return
-      setEnterError(error instanceof Error ? error.message : '没能打开你们的地图')
-    })
+    const timer = window.setTimeout(() => {
+      if (!cancelled) setEnterError('云端太慢了，过一会儿再打开这个链接')
+    }, 8000)
+    void openShared(sharedRole)
+      .then(() => {
+        if (!cancelled) setEnterError('')
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        setEnterError(error instanceof Error ? error.message : '没能打开你们的地图')
+      })
+      .finally(() => window.clearTimeout(timer))
     return () => {
       cancelled = true
+      window.clearTimeout(timer)
     }
   }, [enterError, needShared, openShared, ready, sharedRole])
 
   if (debugPlaces) return <HomePage places={debugPlaces} />
+  if (book && member && showingShared) {
+    return (
+      <HomePage
+        places={places}
+        book={book}
+        member={member}
+        markerPack={book.markerPack}
+        onBookChange={setCurrentBook}
+      />
+    )
+  }
   if (!ready || (needShared && !enterError)) {
-    return <main className="app-loading" aria-label="正在打开你们的地图">✦</main>
+    return (
+      <main className="app-loading" aria-label="正在打开你们的地图">
+        <p>正在打开你们的地图</p>
+      </main>
+    )
   }
   if (needShared && enterError) {
     return (

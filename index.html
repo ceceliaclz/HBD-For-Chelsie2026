@@ -10,15 +10,21 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <title>我们的地图</title>
     <script>
-      // Clear stale PWA caches so phones don't keep a black MapLibre build.
+      // Phones that installed the old map shell keep a flickering blank page
+      // until that service worker is gone. Clear it once, then reload.
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function (regs) {
-          regs.forEach(function (reg) { reg.unregister() })
-        })
-      }
-      if (window.caches) {
-        caches.keys().then(function (keys) {
-          keys.forEach(function (key) { caches.delete(key) })
+          if (!regs.length) return
+          Promise.all(regs.map(function (reg) { return reg.unregister() })).then(function () {
+            if (!window.caches) return
+            return caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (key) { return caches.delete(key) }))
+            })
+          }).then(function () {
+            if (sessionStorage.getItem('sw-cleared')) return
+            sessionStorage.setItem('sw-cleared', '1')
+            location.reload()
+          })
         })
       }
     </script>

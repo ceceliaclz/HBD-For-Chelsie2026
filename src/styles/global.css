@@ -520,9 +520,23 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   width: 100%;
   height: 100%;
   place-items: center;
-  color: var(--together);
-  font-size: 32px;
-  animation: marker-arrive 800ms ease-in-out infinite alternate;
+  padding: 24px;
+  color: #3c2a24;
+  background: #f3eadf;
+  font-size: 18px;
+  text-align: center;
+  animation: none;
+}
+.app-loading p { margin: 0; }
+.app-loading button {
+  margin-top: 16px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 2px solid #c94b3a;
+  border-radius: 18px;
+  background: #e25d4a;
+  color: #fff;
+  font: inherit;
 }
 
 .onboarding-page,
