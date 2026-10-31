@@ -500,11 +500,18 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   transition: none !important;
 }
 
-.leaflet-container .leaflet-pane,
-.leaflet-container .leaflet-top,
-.leaflet-container .leaflet-bottom {
-  z-index: auto;
-}
+/* Country fills live in the overlay SVG, which Leaflet gives z-index 200.
+   A pin's own z-index is just its screen position, so once you zoom in and
+   the pin sits high on the screen that SVG paints over the photo and the
+   color washes it out. Keep the panes stacked, and keep them inside the map
+   so they stay under the dock. */
+.map-view .leaflet-tile-pane { z-index: 200; }
+.map-view .leaflet-overlay-pane { z-index: 400; }
+.map-view .leaflet-shadow-pane { z-index: 500; }
+.map-view .leaflet-marker-pane { z-index: 600; }
+.map-view .leaflet-tooltip-pane { z-index: 650; }
+.map-view .leaflet-popup-pane { z-index: 700; }
+.map-view .leaflet-overlay-pane svg { z-index: auto; }
 
 .leaflet-div-icon.city-marker-wrap {
   background: transparent !important;
