@@ -182,7 +182,7 @@ describe('syncNow', () => {
     await expect(syncNow()).resolves.toBe('no-book')
   })
 
-  it('ensures the session, pulls, pushes, then replaces local places', async () => {
+  it('pulls the cloud cities onto this phone before trying to upload', async () => {
     const calls: string[] = []
     const remotePlace: Place = {
       ...localPlace,
@@ -243,7 +243,54 @@ describe('syncNow', () => {
     supabaseMocks.getSupabase.mockReturnValue(supabase)
 
     await expect(syncNow()).resolves.toBe('ok')
-    expect(calls).toEqual(['ensure-session', 'pull', 'push', 'replace'])
+    expect(calls).toEqual(['pull', 'replace', 'ensure-session', 'push'])
+  })
+
+  it('keeps the cloud cities when uploading fails', async () => {
+    const remotePlace: Place = {
+      ...localPlace,
+      id: 'remote-id',
+      name: '洛杉矶',
+      updatedAt: '2026-10-31T00:00:00.000Z',
+    }
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === 'couple_books' || table === 'members') {
+          return { upsert: vi.fn(async () => { throw new Error('role taken') }) }
+        }
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(async () => ({
+              data: [{
+                id: remotePlace.id,
+                book_id: remotePlace.bookId,
+                place_type: remotePlace.placeType,
+                name: remotePlace.name,
+                country_code: remotePlace.countryCode,
+                lat: remotePlace.lat,
+                lng: remotePlace.lng,
+                visitor: remotePlace.visitor,
+                visited_on: null,
+                updated_at: remotePlace.updatedAt,
+              }],
+              error: null,
+            })),
+          })),
+          upsert: vi.fn(async () => ({ error: null })),
+        }
+      }),
+    }
+    localDbMocks.loadBook.mockResolvedValue(book)
+    localDbMocks.loadMember.mockResolvedValue(member)
+    localDbMocks.listPlaces.mockResolvedValue([localPlace])
+    localDbMocks.replaceAllPlaces.mockResolvedValue(undefined)
+    supabaseMocks.getSupabase.mockReturnValue(supabase)
+
+    await expect(syncNow()).resolves.toBe('pulled')
+    expect(localDbMocks.replaceAllPlaces).toHaveBeenCalledWith(expect.arrayContaining([
+      localPlace,
+      expect.objectContaining({ name: '洛杉矶' }),
+    ]))
   })
 
   it('preserves and uploads local places when the remote list is empty', async () => {
@@ -281,7 +328,7 @@ describe('syncNow', () => {
     supabaseMocks.getSupabase.mockReturnValue(supabase)
 
     await expect(syncNow()).resolves.toBe('ok')
-    expect(calls).toEqual(['pull', 'push', 'replace'])
+    expect(calls).toEqual(['pull', 'replace', 'push'])
   })
 })
 

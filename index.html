@@ -21,8 +21,8 @@
               return Promise.all(keys.map(function (key) { return caches.delete(key) }))
             })
           }).then(function () {
-            if (sessionStorage.getItem('sw-cleared')) return
-            sessionStorage.setItem('sw-cleared', '1')
+            if (sessionStorage.getItem('sw-cleared-12')) return
+            sessionStorage.setItem('sw-cleared-12', '1')
             location.reload()
           })
         })

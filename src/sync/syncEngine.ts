@@ -59,6 +59,7 @@ export class BookFullError extends Error {
 }
 
 export const SHARED_INVITE_CODE = 'X5MPHP'
+export const SHARED_BOOK_ID = 'f2ff5404-a824-466d-920e-052a6368fd1f'
 export const ORIGINAL_COUPLE_BOOK_ID = 'e5913c24-8892-45e9-a134-1951e064ea12'
 
 export async function resumeSharedBook(input: {
@@ -386,18 +387,23 @@ export async function updateBookRemote(book: CoupleBook): Promise<boolean> {
   return true
 }
 
-export async function syncNow(): Promise<'ok' | 'offline' | 'no-book'> {
+export async function syncNow(): Promise<'ok' | 'offline' | 'no-book' | 'pulled'> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline'
 
   const [book, member] = await Promise.all([loadBook(), loadMember()])
   if (!book || !member) return 'no-book'
   if (!getSupabase()) return 'offline'
 
-  await ensureSessionRemote({ book, member })
   const localPlaces = rebindPlacesToBook(await listPlaces(), book.id)
   const remotePlaces = await pullPlaces(book.id)
   const mergedPlaces = mergePlacesByUpdatedAt(localPlaces, remotePlaces)
-  await pushDirtyPlaces(book.id, mergedPlaces)
+  // Show the cloud cities even when this phone cannot upload.
   await replaceAllPlaces(mergedPlaces)
+  try {
+    await ensureSessionRemote({ book, member })
+    await pushDirtyPlaces(book.id, mergedPlaces)
+  } catch {
+    return 'pulled'
+  }
   return 'ok'
 }

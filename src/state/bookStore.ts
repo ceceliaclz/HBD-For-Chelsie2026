@@ -84,9 +84,15 @@ export async function openSharedCoupleBook(role: Role): Promise<BookSession> {
   const nextPlaces = carryLocalPlaces
     ? mergePlacesByUpdatedAt(rebindPlacesToBook(localPlaces, book.id), remotePlaces)
     : remotePlaces
-  if (carryLocalPlaces) await pushDirtyPlaces(book.id, nextPlaces)
   await saveSession(book, member)
   await replaceAllPlaces(nextPlaces)
+  if (carryLocalPlaces) {
+    try {
+      await pushDirtyPlaces(book.id, nextPlaces)
+    } catch {
+      // The shared cities are already on this phone. Upload can retry later.
+    }
+  }
   return { book, member }
 }
 
@@ -163,8 +169,8 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
   const runSync = useCallback(async () => {
     try {
       const result = await syncNow()
-      setSyncStatus(result === 'ok' ? 'synced' : 'offline')
-      if (result === 'ok') setPlaces(await listPlaces())
+      if (result === 'ok' || result === 'pulled') setPlaces(await listPlaces())
+      setSyncStatus(result === 'ok' ? 'synced' : result === 'pulled' ? 'failed' : 'offline')
       return result
     } catch {
       setSyncStatus('failed')

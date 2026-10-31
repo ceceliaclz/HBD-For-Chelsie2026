@@ -6,7 +6,7 @@ import { JoinPage } from './pages/JoinPage'
 import type { Place, Role } from './domain/types'
 import { canShowSharedMap } from './sharedGate'
 import { useBookStore } from './state/bookStore'
-import { SHARED_INVITE_CODE } from './sync/syncEngine'
+import { SHARED_BOOK_ID, SHARED_INVITE_CODE } from './sync/syncEngine'
 
 function requestedRole(): Role | null {
   const role = new URLSearchParams(window.location.search).get('as')
@@ -64,7 +64,9 @@ function RootPage() {
   } = useBookStore()
   const [enterError, setEnterError] = useState('')
   const autoRole = requestedRole()
-  const wrongBook = book !== null && book.inviteCode !== SHARED_INVITE_CODE
+  const wrongBook = book !== null && (
+    book.inviteCode !== SHARED_INVITE_CODE || book.id !== SHARED_BOOK_ID
+  )
   const roleMismatch = autoRole !== null && member !== null && member.role !== autoRole
   const needShared = (autoRole !== null && book === null) || wrongBook || roleMismatch
   const sharedRole: Role = autoRole ?? member?.role ?? 'rabbit'
