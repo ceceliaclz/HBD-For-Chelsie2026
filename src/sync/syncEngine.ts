@@ -1,5 +1,10 @@
 import type { CoupleBook, Member, Place, Role } from '../domain/types'
-import { listPlaces, loadBook, replaceAllPlaces } from '../storage/localDb'
+import {
+  listPlaces,
+  loadBook,
+  loadMember,
+  replaceAllPlaces,
+} from '../storage/localDb'
 import { getSupabase } from './supabaseClient'
 
 interface BookRow {
@@ -107,12 +112,51 @@ export function mergePlacesByUpdatedAt(
   for (const place of [...localPlaces, ...remotePlaces]) {
     const key = placeKey(place)
     const existing = merged.get(key)
-    if (!existing || Date.parse(place.updatedAt) > Date.parse(existing.updatedAt)) {
+    if (!existing) {
       merged.set(key, place)
+      continue
     }
+    const incomingWins = Date.parse(place.updatedAt) > Date.parse(existing.updatedAt)
+    const winner = incomingWins ? place : existing
+    const other = incomingWins ? existing : place
+    const photos = winner.photos?.length ? winner.photos : other.photos
+    merged.set(key, photos?.length ? { ...winner, photos } : winner)
   }
 
   return [...merged.values()]
+}
+
+export function rebindPlacesToBook(
+  places: Place[],
+  bookId: string,
+): Place[] {
+  return places.map((place) => ({ ...place, bookId }))
+}
+
+export async function ensureSessionRemote(input: {
+  book: CoupleBook
+  member: Member
+}): Promise<void> {
+  const supabase = getSupabase()
+  if (!supabase) throw new Error('Supabase is not configured')
+
+  const { book, member } = input
+  const { error: bookError } = await supabase.from('couple_books').upsert({
+    id: book.id,
+    invite_code: book.inviteCode,
+    marker_pack: book.markerPack,
+    created_at: book.createdAt,
+  }, { onConflict: 'id' })
+  if (bookError) throw bookError
+
+  const { error: memberError } = await supabase.from('members').upsert({
+    id: member.id,
+    book_id: book.id,
+    role: member.role,
+    device_token: member.deviceToken,
+    joined_at: member.joinedAt,
+  }, { onConflict: 'id' })
+  if (memberError) throw memberError
 }
 
 export async function createBookRemote(input: {
@@ -251,14 +295,15 @@ export async function updateBookRemote(book: CoupleBook): Promise<boolean> {
 export async function syncNow(): Promise<'ok' | 'offline' | 'no-book'> {
   if (typeof navigator !== 'undefined' && !navigator.onLine) return 'offline'
 
-  const book = await loadBook()
-  if (!book) return 'no-book'
+  const [book, member] = await Promise.all([loadBook(), loadMember()])
+  if (!book || !member) return 'no-book'
   if (!getSupabase()) return 'offline'
 
-  const localPlaces = await listPlaces()
+  await ensureSessionRemote({ book, member })
+  const localPlaces = rebindPlacesToBook(await listPlaces(), book.id)
   const remotePlaces = await pullPlaces(book.id)
   const mergedPlaces = mergePlacesByUpdatedAt(localPlaces, remotePlaces)
-  await replaceAllPlaces(mergedPlaces)
   await pushDirtyPlaces(book.id, mergedPlaces)
+  await replaceAllPlaces(mergedPlaces)
   return 'ok'
 }

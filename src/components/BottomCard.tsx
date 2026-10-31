@@ -16,6 +16,12 @@ export interface BottomCardProps {
   filter: PlaceFilter
   onFilterChange: (filter: PlaceFilter) => void
   onAddPlace: () => void
+  footprintOn?: boolean
+  playing?: boolean
+  perStop?: number
+  onToggleFootprint?: () => void
+  onPlay?: () => void
+  onPerStop?: (next: number) => void
 }
 
 export function BottomCard({
@@ -23,6 +29,12 @@ export function BottomCard({
   filter,
   onFilterChange,
   onAddPlace,
+  footprintOn = false,
+  playing = false,
+  perStop = 5,
+  onToggleFootprint,
+  onPlay,
+  onPerStop,
 }: BottomCardProps) {
   return (
     <section className="home-dock" aria-label="筛选与点亮">
@@ -39,6 +51,16 @@ export function BottomCard({
           </button>
         ))}
       </div>
+
+      {onPlay && onToggleFootprint && onPerStop && (
+        <div className="foot-tools">
+          <button type="button" aria-pressed={footprintOn} onClick={onToggleFootprint}>足迹</button>
+          <button type="button" aria-label="减少每地张数" onClick={() => onPerStop(Math.max(1, perStop - 1))}>−</button>
+          <b>{perStop}</b>
+          <button type="button" aria-label="增加每地张数" onClick={() => onPerStop(Math.min(8, perStop + 1))}>+</button>
+          <button type="button" className="foot-tools__play" onClick={onPlay}>{playing ? '停止' : '播放足迹'}</button>
+        </div>
+      )}
 
       {places.length === 0 && (
         <p className="home-dock__empty">

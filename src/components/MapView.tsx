@@ -12,22 +12,31 @@ import {
   visitedCountryCodes,
 } from '../geo/countryLookup'
 import { fitMapToPlaces } from '../geo/fitPlaces'
-import { formatCityLabel, searchCities } from '../geo/citySearch'
+import {
+  CITY_OUTLINE_MIN_ZOOM,
+  CITY_OUTLINE_SCALE_KM,
+  mapInteractionOptions,
+} from '../geo/mapPresentation'
+import { searchCities } from '../geo/citySearch'
 import countriesGeoJson from '../../public/geo/countries-110m.json'
 
 const LONG_PRESS_MS = 500
-const CITY_OUTLINE_MIN_ZOOM = 5
-const HEART_PINK = '#F5A0BF'
-const SVG_NS = 'http://www.w3.org/2000/svg'
-const OCEAN = '#0a1020'
-const LAND = '#3d4f6f'
-const BORDER = 'rgba(210, 225, 255, 0.55)'
+const HEART_PINK = '#FF8A5B'
+const OCEAN = '#efe4d6'
+const LAND = '#f7f1e8'
+const BORDER = '#e4cfc0'
+const VISITOR_PIN: Record<Visitor, string> = {
+  together: '#FF8A5B',
+  rabbit: '#FF6D8F',
+  dog: '#5EB8C8',
+}
 
 export interface MapViewProps {
   places: Place[]
   filter: Visitor | 'all'
   markerPack: MarkerPack
   onLongPress: (lngLat: { lng: number; lat: number }) => void
+  onPlaceOpen?: (place: Place) => void
   onMapReady?: (map: L.Map | null) => void
 }
 
@@ -69,58 +78,29 @@ function markerLabel(place: Place): string {
   return hit.nameZh ?? hit.name
 }
 
-function createHeartSvg(): SVGSVGElement {
-  const svg = document.createElementNS(SVG_NS, 'svg')
-  svg.setAttribute('class', 'city-marker__heart-svg')
-  svg.setAttribute('viewBox', '-3 -3 38 36')
-  svg.setAttribute('width', '40')
-  svg.setAttribute('height', '38')
-  svg.setAttribute('aria-hidden', 'true')
-  svg.setAttribute('focusable', 'false')
-
-  const path = document.createElementNS(SVG_NS, 'path')
-  path.setAttribute(
-    'd',
-    'M16 27.2C16 27.2 3.5 19.1 3.5 11.2 3.5 6.9 6.9 3.8 11 3.8c2.3 0 3.9 1.1 5 2.6 1.1-1.5 2.7-2.6 5-2.6 4.1 0 7.5 3.1 7.5 7.4 0 7.9-12.5 16-12.5 16z',
-  )
-  path.setAttribute('fill', HEART_PINK)
-  path.setAttribute('stroke', '#fff0f5')
-  path.setAttribute('stroke-width', '2.2')
-  path.setAttribute('stroke-linejoin', 'round')
-  path.setAttribute('paint-order', 'stroke fill')
-  svg.append(path)
-  return svg
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char
+  ))
 }
 
-function createHeartMarkerElement(place: Place): HTMLDivElement {
-  const labelText = markerLabel(place)
-  const element = document.createElement('div')
-  element.className = 'city-marker city-marker--heart'
-  element.style.setProperty('--marker-color', HEART_PINK)
-  element.setAttribute('aria-label', `${labelText}，心形标记`)
-  element.title = formatCityLabel({
-    name: place.name,
-    nameZh: labelText !== place.name ? labelText : undefined,
-  })
-
-  const heartWrap = document.createElement('span')
-  heartWrap.className = 'city-marker__heart'
-  heartWrap.setAttribute('aria-hidden', 'true')
-  heartWrap.append(createHeartSvg())
-  element.append(heartWrap)
-
-  const glyph = document.createElement('span')
-  glyph.className = 'city-marker__glyph'
-  glyph.hidden = true
-  glyph.textContent = '💗'
-  element.append(glyph)
-
-  const label = document.createElement('span')
-  label.className = 'city-marker__label'
-  label.textContent = labelText
-  element.append(label)
-
-  return element
+export function placeMarkerHtml(place: Place): { html: string; iconSize: [number, number]; iconAnchor: [number, number] } {
+  const label = escapeHtml(markerLabel(place))
+  const color = VISITOR_PIN[place.visitor]
+  const photos = place.photos ?? []
+  if (!photos.length) {
+    return {
+      html: `<div class="pin pin--empty" style="--pin:${color}"><span class="pin__mark">待添加</span><span class="pin__name">${label}</span></div>`,
+      iconSize: [72, 58],
+      iconAnchor: [36, 28],
+    }
+  }
+  const shot = escapeHtml(photos[0])
+  return {
+    html: `<div class="pin pin--photo" style="--pin:${color}"><span class="pin__tape"></span><span class="pin__shot" style="background-image:url('${shot}')"></span><span class="pin__count">${photos.length}</span><span class="pin__name">${label}</span></div>`,
+    iconSize: [78, 108],
+    iconAnchor: [32, 86],
+  }
 }
 
 function styleCountry(
@@ -151,6 +131,7 @@ export function MapView({
   filter,
   markerPack,
   onLongPress,
+  onPlaceOpen,
   onMapReady,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -163,11 +144,29 @@ export function MapView({
   const filterRef = useRef(filter)
   const onMapReadyRef = useRef(onMapReady)
   const onLongPressRef = useRef(onLongPress)
+  const onPlaceOpenRef = useRef(onPlaceOpen)
 
   onMapReadyRef.current = onMapReady
   placesRef.current = places
   filterRef.current = filter
   onLongPressRef.current = onLongPress
+  onPlaceOpenRef.current = onPlaceOpen
+
+  function addPlaceMarker(markers: L.LayerGroup, place: Place) {
+    const icon = placeMarkerHtml(place)
+    const marker = L.marker([place.lat, place.lng], {
+      icon: L.divIcon({
+        className: 'city-marker-wrap',
+        html: icon.html,
+        iconSize: icon.iconSize,
+        iconAnchor: icon.iconAnchor,
+      }),
+      interactive: true,
+      keyboard: true,
+    })
+    marker.on('click', () => onPlaceOpenRef.current?.(place))
+    marker.addTo(markers)
+  }
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -177,9 +176,7 @@ export function MapView({
       zoom: 2,
       minZoom: 1,
       maxZoom: 16,
-      zoomControl: false,
-      attributionControl: false,
-      preferCanvas: false,
+      ...mapInteractionOptions,
     })
     mapRef.current = map
     onMapReadyRef.current?.(map)
@@ -191,16 +188,24 @@ export function MapView({
     }).addTo(map)
     countriesLayerRef.current = countries
 
-    const auras = L.geoJSON(cityAuraGeoJson(placesRef.current, filterRef.current), {
-      style: {
-        fillColor: HEART_PINK,
-        fillOpacity: 0.18,
-        color: HEART_PINK,
-        weight: 1.6,
-        opacity: 0.85,
+    const auras = L.geoJSON(
+      cityAuraGeoJson(
+        placesRef.current,
+        filterRef.current,
+        CITY_OUTLINE_SCALE_KM,
+      ),
+      {
+        style: {
+          fillColor: HEART_PINK,
+          fillOpacity: 0.12,
+          color: '#ffd7e6',
+          weight: 2,
+          opacity: 0.95,
+          dashArray: '5 4',
+        },
+        interactive: false,
       },
-      interactive: false,
-    })
+    )
     aurasLayerRef.current = auras
     if (map.getZoom() >= CITY_OUTLINE_MIN_ZOOM) {
       auras.addTo(map)
@@ -212,16 +217,7 @@ export function MapView({
       placesRef.current,
       filterRef.current,
     )) {
-      L.marker([place.lat, place.lng], {
-        icon: L.divIcon({
-          className: 'city-marker-wrap',
-          html: createHeartMarkerElement(place).outerHTML,
-          iconSize: [40, 52],
-          iconAnchor: [20, 48],
-        }),
-        interactive: false,
-        keyboard: false,
-      }).addTo(markers)
+      addPlaceMarker(markers, place)
     }
 
     if (placesRef.current.length > 0) {
@@ -309,20 +305,17 @@ export function MapView({
     countries.setStyle((feature) => styleCountry(feature, visited))
 
     auras.clearLayers()
-    auras.addData(cityAuraGeoJson(places, filter) as GeoJSON.GeoJsonObject)
+    auras.addData(
+      cityAuraGeoJson(
+        places,
+        filter,
+        CITY_OUTLINE_SCALE_KM,
+      ) as GeoJSON.GeoJsonObject,
+    )
 
     markers.clearLayers()
     for (const place of cityPlacesForFilter(places, filter)) {
-      L.marker([place.lat, place.lng], {
-        icon: L.divIcon({
-          className: 'city-marker-wrap',
-          html: createHeartMarkerElement(place).outerHTML,
-          iconSize: [40, 52],
-          iconAnchor: [20, 48],
-        }),
-        interactive: false,
-        keyboard: false,
-      }).addTo(markers)
+      addPlaceMarker(markers, place)
     }
   }, [places, filter])
 
@@ -339,32 +332,12 @@ export function MapView({
   }, [places])
 
   return (
-    <>
-      <div
-        ref={containerRef}
-        className="map-view"
-        data-marker-pack={markerPack}
-        aria-label="共同旅行地图"
-        style={{ background: OCEAN }}
-      />
-      <div className="map-zoom" role="group" aria-label="地图缩放">
-        <button
-          type="button"
-          className="map-zoom__btn"
-          aria-label="放大"
-          onClick={() => mapRef.current?.zoomIn()}
-        >
-          +
-        </button>
-        <button
-          type="button"
-          className="map-zoom__btn"
-          aria-label="缩小"
-          onClick={() => mapRef.current?.zoomOut()}
-        >
-          −
-        </button>
-      </div>
-    </>
+    <div
+      ref={containerRef}
+      className="map-view"
+      data-marker-pack={markerPack}
+      aria-label="共同旅行地图，可双指缩放"
+      style={{ background: OCEAN }}
+    />
   )
 }

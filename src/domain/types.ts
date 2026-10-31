@@ -29,5 +29,7 @@ export interface Place {
   lng: number
   visitor: Visitor
   visitedOn?: string
+  /** Local photo data URLs. Missing or empty means 待添加. Not synced. */
+  photos?: string[]
   updatedAt: string
 }

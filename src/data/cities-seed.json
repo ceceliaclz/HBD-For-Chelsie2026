@@ -37086,5 +37086,14 @@
     "countryName": "Zimbabwe",
     "lat": -18.9707,
     "lng": 32.6709
+  },
+  {
+    "name": "Huangshan",
+    "nameZh": "黄山市",
+    "aliases": ["黄山", "屯溪", "徽州", "Huangshan City"],
+    "countryCode": "CN",
+    "countryName": "China",
+    "lat": 29.7147,
+    "lng": 118.338
   }
 ]

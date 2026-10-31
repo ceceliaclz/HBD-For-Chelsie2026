@@ -131,5 +131,6 @@
   { "name": "Perth", "nameZh": "珀斯", "countryCode": "AU", "countryName": "Australia", "lat": -31.9505, "lng": 115.8605 },
   { "name": "Auckland", "nameZh": "奥克兰", "countryCode": "NZ", "countryName": "New Zealand", "lat": -36.8485, "lng": 174.7633 },
   { "name": "Queenstown", "nameZh": "皇后镇", "countryCode": "NZ", "countryName": "New Zealand", "lat": -45.0312, "lng": 168.6626 },
-  { "name": "Fiji (Nadi)", "nameZh": "斐济", "aliases": ["Nadi", "Suva"], "countryCode": "FJ", "countryName": "Fiji", "lat": -17.7765, "lng": 177.4356 }
+  { "name": "Fiji (Nadi)", "nameZh": "斐济", "aliases": ["Nadi", "Suva"], "countryCode": "FJ", "countryName": "Fiji", "lat": -17.7765, "lng": 177.4356 },
+  { "name": "Huangshan", "nameZh": "黄山市", "aliases": ["黄山", "屯溪", "徽州", "Huangshan City"], "countryCode": "CN", "countryName": "China", "lat": 29.7147, "lng": 118.338 }
 ]

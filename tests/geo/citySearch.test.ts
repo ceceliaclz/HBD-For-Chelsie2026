@@ -16,6 +16,17 @@ describe('searchCities', () => {
     expect(searchCities('呈坎').some((hit) => hit.name === 'Chengkan')).toBe(true)
   })
 
+  it.each(['黄山', '屯溪', '徽州', 'Huangshan'])(
+    'finds Huangshan by %s',
+    (query) => {
+      expect(searchCities(query)).toContainEqual(expect.objectContaining({
+        name: 'Huangshan',
+        nameZh: '黄山市',
+        countryCode: 'CN',
+      }))
+    },
+  )
+
   it('finds cities by English name for newly added destinations', () => {
     expect(searchCities('manila').some((hit) => hit.name === 'Manila')).toBe(true)
     expect(searchCities('san francisco').some((hit) => hit.name === 'San Francisco')).toBe(true)

@@ -15,7 +15,10 @@ import {
 import {
   createBookRemote,
   joinBookRemote,
+  mergePlacesByUpdatedAt,
   pullPlaces,
+  pushDirtyPlaces,
+  rebindPlacesToBook,
   syncNow,
 } from '../sync/syncEngine'
 import { getSupabase } from '../sync/supabaseClient'
@@ -28,6 +31,13 @@ export interface BookSession {
 }
 
 export type SyncStatus = 'synced' | 'offline' | 'failed'
+
+export function initialSyncStatus(_input: {
+  online: boolean
+  configured: boolean
+}): SyncStatus {
+  return 'offline'
+}
 
 interface BookStoreOptions {
   syncLifecycle?: boolean
@@ -57,6 +67,7 @@ export async function createCoupleBook(role: Role): Promise<BookSession> {
 }
 
 export async function joinCoupleBook(code: string, role: Role): Promise<BookSession> {
+  const localPlaces = await listPlaces()
   const member: Member = {
     id: newId(),
     bookId: '',
@@ -69,14 +80,15 @@ export async function joinCoupleBook(code: string, role: Role): Promise<BookSess
     member,
   })
   const joinedMember = { ...member, bookId: book.id }
-
+  const reboundLocalPlaces = rebindPlacesToBook(localPlaces, book.id)
+  const remotePlaces = await pullPlaces(book.id)
+  const mergedPlaces = mergePlacesByUpdatedAt(
+    reboundLocalPlaces,
+    remotePlaces,
+  )
+  await pushDirtyPlaces(book.id, mergedPlaces)
   await saveSession(book, joinedMember)
-  try {
-    const places = await pullPlaces(book.id)
-    await replaceAllPlaces(places)
-  } catch {
-    // Joining already succeeded remotely and locally; places can sync later.
-  }
+  await replaceAllPlaces(mergedPlaces)
   return { book, member: joinedMember }
 }
 
@@ -85,8 +97,11 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
   const [book, setBook] = useState<CoupleBook | null>(null)
   const [member, setMember] = useState<Member | null>(null)
   const [ready, setReady] = useState(initialPlaces !== undefined)
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
-    typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'synced',
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(() =>
+    initialSyncStatus({
+      online: typeof navigator !== 'undefined' ? navigator.onLine : false,
+      configured: getSupabase() !== null,
+    }),
   )
 
   useEffect(() => {
@@ -123,6 +138,11 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
       return 'failed' as const
     }
   }, [])
+
+  useEffect(() => {
+    if (!options.syncLifecycle || !ready || !book || !member) return
+    void runSync()
+  }, [book, member, options.syncLifecycle, ready, runSync])
 
   useEffect(() => {
     if (!options.syncLifecycle) return
@@ -164,6 +184,18 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     await runSync()
   }, [runSync])
 
+  const attachPhotos = useCallback(async (placeId: string, photos: string[]) => {
+    if (!photos.length) return
+    const current = (await listPlaces()).find((place) => place.id === placeId)
+    if (!current) return
+    await upsertPlace({
+      ...current,
+      photos: [...(current.photos ?? []), ...photos],
+      updatedAt: new Date().toISOString(),
+    })
+    setPlaces(await listPlaces())
+  }, [])
+
   const createBook = useCallback(async (role: Role) => {
     const session = await createCoupleBook(role)
     setBook(session.book)
@@ -190,6 +222,7 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     ready,
     syncStatus,
     addPlace,
+    attachPhotos,
     createBook,
     joinBook,
     setCurrentBook,

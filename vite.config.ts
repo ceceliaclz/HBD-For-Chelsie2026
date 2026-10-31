@@ -16,8 +16,8 @@ export default defineConfig({
       manifest: {
         name: '我们的地图',
         short_name: '我们的地图',
-        theme_color: '#121826',
-        background_color: '#121826',
+        theme_color: '#f3eadf',
+        background_color: '#f3eadf',
         display: 'standalone',
         icons: [
           {

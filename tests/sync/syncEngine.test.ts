@@ -4,6 +4,7 @@ import type { CoupleBook, Member, Place } from '../../src/domain/types'
 const localDbMocks = vi.hoisted(() => ({
   listPlaces: vi.fn(),
   loadBook: vi.fn(),
+  loadMember: vi.fn(),
   replaceAllPlaces: vi.fn(),
 }))
 const supabaseMocks = vi.hoisted(() => ({
@@ -15,8 +16,10 @@ vi.mock('../../src/sync/supabaseClient', () => supabaseMocks)
 
 import {
   createBookRemote,
+  ensureSessionRemote,
   joinBookRemote,
   mergePlacesByUpdatedAt,
+  rebindPlacesToBook,
   RoleTakenError,
   syncNow,
 } from '../../src/sync/syncEngine'
@@ -70,6 +73,77 @@ describe('mergePlacesByUpdatedAt', () => {
 
     expect(merged).toEqual([remote])
   })
+
+  it('keeps local photos when the newer remote row has none', () => {
+    const remote: Place = {
+      ...localPlace,
+      id: 'remote-id',
+      visitor: 'together',
+      updatedAt: '2026-01-03T00:00:00.000Z',
+    }
+    const localWithPhotos: Place = {
+      ...localPlace,
+      photos: ['data:image/jpeg;base64,abc'],
+    }
+
+    const merged = mergePlacesByUpdatedAt([localWithPhotos], [remote])
+
+    expect(merged).toEqual([{ ...remote, photos: localWithPhotos.photos }])
+  })
+})
+
+describe('rebindPlacesToBook', () => {
+  it('moves preserved local places into the active cloud book', () => {
+    expect(rebindPlacesToBook([localPlace], 'joined-book')).toEqual([
+      { ...localPlace, bookId: 'joined-book' },
+    ])
+  })
+})
+
+describe('ensureSessionRemote', () => {
+  it('upserts the local book before its member', async () => {
+    const calls: string[] = []
+    const bookUpsert = vi.fn(async () => {
+      calls.push('book')
+      return { error: null }
+    })
+    const memberUpsert = vi.fn(async () => {
+      calls.push('member')
+      return { error: null }
+    })
+    supabaseMocks.getSupabase.mockReturnValue({
+      from: vi.fn((table: string) => ({
+        upsert: table === 'couple_books' ? bookUpsert : memberUpsert,
+      })),
+    })
+
+    await ensureSessionRemote({ book, member })
+
+    expect(calls).toEqual(['book', 'member'])
+    expect(bookUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: book.id, invite_code: book.inviteCode }),
+      { onConflict: 'id' },
+    )
+    expect(memberUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: member.id, book_id: book.id }),
+      { onConflict: 'id' },
+    )
+  })
+
+  it('does not write a member if the book write fails', async () => {
+    const memberUpsert = vi.fn()
+    supabaseMocks.getSupabase.mockReturnValue({
+      from: vi.fn((table: string) => ({
+        upsert: table === 'couple_books'
+          ? vi.fn(async () => ({ error: new Error('book write failed') }))
+          : memberUpsert,
+      })),
+    })
+
+    await expect(ensureSessionRemote({ book, member }))
+      .rejects.toThrow('book write failed')
+    expect(memberUpsert).not.toHaveBeenCalled()
+  })
 })
 
 describe('syncNow', () => {
@@ -86,7 +160,7 @@ describe('syncNow', () => {
     await expect(syncNow()).resolves.toBe('no-book')
   })
 
-  it('pulls, merges, replaces locally, then pushes the merged places', async () => {
+  it('ensures the session, pulls, pushes, then replaces local places', async () => {
     const calls: string[] = []
     const remotePlace: Place = {
       ...localPlace,
@@ -95,39 +169,50 @@ describe('syncNow', () => {
       updatedAt: '2026-01-03T00:00:00.000Z',
     }
     const supabase = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(async () => {
-            calls.push('pull')
-            return {
-              data: [{
-                id: remotePlace.id,
-                book_id: remotePlace.bookId,
-                place_type: remotePlace.placeType,
-                name: remotePlace.name,
-                country_code: remotePlace.countryCode,
-                lat: remotePlace.lat,
-                lng: remotePlace.lng,
-                visitor: remotePlace.visitor,
-                visited_on: null,
-                updated_at: remotePlace.updatedAt,
-              }],
-              error: null,
-            }
+      from: vi.fn((table: string) => {
+        if (table === 'couple_books' || table === 'members') {
+          return {
+            upsert: vi.fn(async () => {
+              if (table === 'members') calls.push('ensure-session')
+              return { error: null }
+            }),
+          }
+        }
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(async () => {
+              calls.push('pull')
+              return {
+                data: [{
+                  id: remotePlace.id,
+                  book_id: remotePlace.bookId,
+                  place_type: remotePlace.placeType,
+                  name: remotePlace.name,
+                  country_code: remotePlace.countryCode,
+                  lat: remotePlace.lat,
+                  lng: remotePlace.lng,
+                  visitor: remotePlace.visitor,
+                  visited_on: null,
+                  updated_at: remotePlace.updatedAt,
+                }],
+                error: null,
+              }
+            }),
+          })),
+          upsert: vi.fn(async (rows: unknown) => {
+            calls.push('push')
+            expect(rows).toEqual([expect.objectContaining({
+              id: remotePlace.id,
+              visitor: 'together',
+              updated_at: remotePlace.updatedAt,
+            })])
+            return { error: null }
           }),
-        })),
-        upsert: vi.fn(async (rows: unknown) => {
-          calls.push('push')
-          expect(rows).toEqual([expect.objectContaining({
-            id: remotePlace.id,
-            visitor: 'together',
-            updated_at: remotePlace.updatedAt,
-          })])
-          return { error: null }
-        }),
-      })),
+        }
+      }),
     }
     localDbMocks.loadBook.mockResolvedValue(book)
+    localDbMocks.loadMember.mockResolvedValue(member)
     localDbMocks.listPlaces.mockResolvedValue([localPlace])
     localDbMocks.replaceAllPlaces.mockImplementation(async (places) => {
       calls.push('replace')
@@ -136,7 +221,45 @@ describe('syncNow', () => {
     supabaseMocks.getSupabase.mockReturnValue(supabase)
 
     await expect(syncNow()).resolves.toBe('ok')
-    expect(calls).toEqual(['pull', 'replace', 'push'])
+    expect(calls).toEqual(['ensure-session', 'pull', 'push', 'replace'])
+  })
+
+  it('preserves and uploads local places when the remote list is empty', async () => {
+    const calls: string[] = []
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === 'couple_books' || table === 'members') {
+          return { upsert: vi.fn(async () => ({ error: null })) }
+        }
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(async () => {
+              calls.push('pull')
+              return { data: [], error: null }
+            }),
+          })),
+          upsert: vi.fn(async (rows: unknown) => {
+            calls.push('push')
+            expect(rows).toEqual([expect.objectContaining({
+              id: localPlace.id,
+              name: localPlace.name,
+            })])
+            return { error: null }
+          }),
+        }
+      }),
+    }
+    localDbMocks.loadBook.mockResolvedValue(book)
+    localDbMocks.loadMember.mockResolvedValue(member)
+    localDbMocks.listPlaces.mockResolvedValue([localPlace])
+    localDbMocks.replaceAllPlaces.mockImplementation(async (places) => {
+      calls.push('replace')
+      expect(places).toEqual([localPlace])
+    })
+    supabaseMocks.getSupabase.mockReturnValue(supabase)
+
+    await expect(syncNow()).resolves.toBe('ok')
+    expect(calls).toEqual(['pull', 'push', 'replace'])
   })
 })
 

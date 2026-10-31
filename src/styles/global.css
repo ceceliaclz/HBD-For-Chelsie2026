@@ -489,43 +489,15 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   .add-place-backdrop, .add-place-sheet { animation: none; }
 }
 
-.map-zoom {
-  position: absolute;
-  z-index: 4;
-  left: 16px;
-  top: 48%;
-  transform: translateY(-50%);
-  display: grid;
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid rgba(245, 247, 251, 0.16);
-  border-radius: 12px;
-  background: rgba(28, 36, 54, 0.92);
-  backdrop-filter: blur(12px);
-}
-
-.map-zoom__btn {
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-bottom: 1px solid rgba(245, 247, 251, 0.12);
-  color: var(--text);
-  background: transparent;
-  font: inherit;
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.map-zoom__btn:last-child {
-  border-bottom: 0;
-}
-
 /* Leaflet: transparent marker chrome + ocean backdrop */
 .map-view.leaflet-container {
   background: #0a1020;
   font: inherit;
+}
+
+/* Avoid Safari briefly dropping the complex SVG during pinch zoom. */
+.map-view .leaflet-zoom-animated {
+  transition: none !important;
 }
 
 .leaflet-container .leaflet-pane,
@@ -885,3 +857,131 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
   .role-card { transition: none; }
   .settings-sheet { animation: none; }
 }
+
+.home-page {
+  color: #3c2a24;
+  background: #f3eadf;
+  font-family: "Hannotate SC", "HanziPen SC", "Wawati SC", "Yuanti SC", "PingFang SC", sans-serif;
+}
+.home-top-meta__eyebrow,
+.home-top-meta__title { color: #3c2a24; text-shadow: none; }
+.home-top-meta__stats span {
+  color: #8a6a5c;
+  background: #fffaf4;
+  border: 1.5px dashed #e7b39a;
+  box-shadow: 2px 3px 0 #f3d3c4;
+}
+.home-top-meta__stats strong { color: #e25d4a; }
+.home-dock {
+  color: #3c2a24;
+  background: #fffaf4;
+  border: 2px solid #efc3b0;
+  box-shadow: 4px 5px 0 rgba(226, 93, 74, .16);
+}
+.filter-chips { display: flex; gap: 6px; }
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 18px;
+  border: 1.5px dashed #d98970;
+  background: #fffdf8;
+  color: #9a5c48;
+  box-shadow: 2px 3px 0 #f3c7b4;
+  line-height: 1;
+}
+.filter-chip[aria-pressed="true"] {
+  background: #ffe4d6;
+  color: #e25d4a;
+  border-style: solid;
+  font-weight: 700;
+}
+.home-dock__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e25d4a;
+  color: #fff;
+  border: 2px solid #c94b3a;
+  box-shadow: 3px 3px 0 #f0b5a4;
+}
+.home-dock__empty { color: #8a6a5c; }
+.foot-tools { display: flex; align-items: center; gap: 8px; }
+.foot-tools button, .place-sheet__close, .place-sheet__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 18px;
+  border: 1.5px dashed #d98970;
+  background: #fffdf8;
+  color: #9a5c48;
+  box-shadow: 2px 3px 0 #f3c7b4;
+  font: inherit;
+  line-height: 1;
+}
+.foot-tools button[aria-pressed="true"] { background: #ffe4d6; color: #e25d4a; border-style: solid; font-weight: 700; }
+.foot-tools b { min-width: 16px; text-align: center; }
+.foot-tools__play { margin-left: auto; background: #e25d4a !important; color: #fff !important; border: 2px solid #c94b3a !important; }
+.leaflet-control-zoom {
+  border: 1.5px dashed #d98970 !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+  box-shadow: 2px 3px 0 #f3c7b4 !important;
+}
+.leaflet-bar a {
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  color: #3c2a24 !important;
+  background: #fffdf8 !important;
+}
+.city-marker-wrap { background: transparent; border: 0; }
+.pin { position: relative; pointer-events: auto; }
+.pin--empty { width: 72px; height: 58px; display: flex; flex-direction: column; align-items: center; }
+.pin__mark {
+  width: 52px; height: 28px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px dashed #d98970; background: #fffdf8; color: #e25d4a;
+  font-size: 12px; font-weight: 700; line-height: 1; box-shadow: 2px 2px 0 #f3c7b4;
+}
+.pin__name {
+  margin-top: 4px; padding: 2px 8px; border-radius: 999px;
+  background: #fffaf4; color: #3c2a24; font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.pin--photo { width: 78px; height: 108px; }
+.pin__tape { position: absolute; left: 18px; top: 2px; z-index: 2; width: 28px; height: 10px; background: rgba(255, 206, 120, .85); }
+.pin__shot {
+  position: absolute; left: 2px; top: 8px; width: 58px; height: 64px;
+  border: 3px solid #fff; border-bottom-width: 12px; border-radius: 4px;
+  background: #fff center/cover no-repeat; box-shadow: 0 8px 14px rgba(90, 40, 20, .22);
+}
+.pin__count {
+  position: absolute; right: 0; top: 6px; z-index: 3; min-width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 9px; border: 2px solid #fff; background: #e25d4a; color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 1;
+}
+.pin--photo .pin__name { position: absolute; left: 50%; top: 78px; margin-top: 0; transform: translateX(-50%); }
+.place-sheet, .memory-card {
+  position: absolute; z-index: 5; left: 12px; right: 12px;
+  background: #fffaf4; border: 2px solid #efc3b0; border-radius: 28px;
+  box-shadow: 4px 5px 0 rgba(226, 93, 74, .16); color: #3c2a24;
+}
+.place-sheet { bottom: 12px; padding: 8px 16px 18px; }
+.place-sheet h2 { margin: 0; font-family: "Songti SC", serif; font-size: 28px; }
+.place-sheet__meta, .place-sheet__empty { color: #8a6a5c; }
+.place-sheet__grab { width: 42px; height: 6px; margin: 6px auto 12px; border-radius: 3px; background: #f0cdb8; }
+.place-sheet__film { display: flex; gap: 8px; overflow: auto; padding: 8px 0; }
+.place-sheet__film img { width: 72px; height: 72px; object-fit: cover; border: 3px solid #fff; border-radius: 14px; }
+.place-sheet__add { margin-top: 8px; width: 100%; background: #e25d4a; color: #fff; border-style: solid; border-color: #c94b3a; font-weight: 700; }
+.place-sheet__add input { display: none; }
+.place-sheet__close { width: 100%; margin-top: 8px; }
+.memory-card { bottom: 168px; padding: 12px 16px 14px; }
+.memory-card__frame { height: 180px; display: flex; align-items: center; justify-content: center; background: #f6efe6; border-radius: 12px; overflow: hidden; }
+.memory-card__frame img { width: 100%; height: 100%; object-fit: cover; }
+.memory-card__frame p, .memory-card span { color: #8a6a5c; }
+.memory-card b { display: block; margin-top: 8px; font-size: 22px; }

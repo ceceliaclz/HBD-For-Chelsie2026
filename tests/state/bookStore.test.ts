@@ -11,7 +11,15 @@ import {
 const syncMocks = vi.hoisted(() => ({
   createBookRemote: vi.fn(),
   joinBookRemote: vi.fn(),
+  mergePlacesByUpdatedAt: vi.fn((local: unknown[], remote: unknown[]) => [
+    ...local,
+    ...remote,
+  ]),
   pullPlaces: vi.fn(),
+  pushDirtyPlaces: vi.fn(),
+  rebindPlacesToBook: vi.fn((places: Array<Record<string, unknown>>, bookId: string) =>
+    places.map((place) => ({ ...place, bookId }))),
+  syncNow: vi.fn(),
 }))
 
 const supabaseMocks = vi.hoisted(() => ({
@@ -21,12 +29,20 @@ const supabaseMocks = vi.hoisted(() => ({
 vi.mock('../../src/sync/syncEngine', () => syncMocks)
 vi.mock('../../src/sync/supabaseClient', () => supabaseMocks)
 
-import { createCoupleBook, joinCoupleBook } from '../../src/state/bookStore'
+import { createCoupleBook, initialSyncStatus, joinCoupleBook } from '../../src/state/bookStore'
 
 beforeEach(async () => {
   await clearAll()
   vi.clearAllMocks()
   supabaseMocks.getSupabase.mockReturnValue(null)
+})
+
+describe('initialSyncStatus', () => {
+  it('does not claim success before a completed sync', () => {
+    expect(initialSyncStatus({ online: true, configured: true })).toBe('offline')
+    expect(initialSyncStatus({ online: true, configured: false })).toBe('offline')
+    expect(initialSyncStatus({ online: false, configured: true })).toBe('offline')
+  })
 })
 
 describe('book onboarding actions', () => {
@@ -50,7 +66,7 @@ describe('book onboarding actions', () => {
     expect(await loadMember()).toBeNull()
   })
 
-  it('joins remotely, saves membership and pulls shared places', async () => {
+  it('joins remotely, merges local and remote places, then uploads the union', async () => {
     const book = {
       id: 'book-remote',
       inviteCode: 'MAP7YK',
@@ -58,6 +74,17 @@ describe('book onboarding actions', () => {
       createdAt: '2026-08-10T00:00:00.000Z',
     }
     syncMocks.joinBookRemote.mockResolvedValue({ book, members: [] })
+    await upsertPlace({
+      id: 'local-place',
+      bookId: 'old-local-book',
+      placeType: 'city',
+      name: '大阪',
+      countryCode: 'JP',
+      lat: 34.69,
+      lng: 135.5,
+      visitor: 'dog',
+      updatedAt: '2026-08-09T00:00:00.000Z',
+    })
     syncMocks.pullPlaces.mockResolvedValue([
       {
         id: 'place-1',
@@ -80,10 +107,17 @@ describe('book onboarding actions', () => {
     }))
     expect(result.book).toEqual(book)
     expect((await loadMember())?.bookId).toBe(book.id)
-    expect(await listPlaces()).toHaveLength(1)
+    expect(syncMocks.pushDirtyPlaces).toHaveBeenCalledWith(
+      book.id,
+      expect.arrayContaining([
+        expect.objectContaining({ name: '大阪', bookId: book.id }),
+        expect.objectContaining({ name: '东京', bookId: book.id }),
+      ]),
+    )
+    expect(await listPlaces()).toHaveLength(2)
   })
 
-  it('keeps the joined local session when pulling places fails', async () => {
+  it('keeps the original local places when pulling joined places fails', async () => {
     const book = {
       id: 'book-remote',
       inviteCode: 'MAP7YK',
@@ -105,11 +139,11 @@ describe('book onboarding actions', () => {
     syncMocks.joinBookRemote.mockResolvedValue({ book, members: [] })
     syncMocks.pullPlaces.mockRejectedValue(new Error('network unavailable'))
 
-    const result = await joinCoupleBook('map7yk', 'dog')
+    await expect(joinCoupleBook('map7yk', 'dog'))
+      .rejects.toThrow('network unavailable')
 
-    expect(result.book).toEqual(book)
-    expect(await loadBook()).toEqual(book)
-    expect((await loadMember())?.bookId).toBe(book.id)
+    expect(await loadBook()).toBeNull()
+    expect(await loadMember()).toBeNull()
     expect(await listPlaces()).toEqual([localPlace])
   })
 })
