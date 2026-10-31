@@ -1137,3 +1137,101 @@ body:has(.app-loading) { background: #f3eadf; }
 }
 .onboarding-card--join b { color: #e25d4a; }
 .app-loading { color: #e25d4a; }
+
+.home-dock__actions {
+  display: grid;
+  grid-template-columns: 1.4fr .8fr;
+  gap: 8px;
+}
+.home-dock__actions .home-dock__cta,
+.home-dock__wish {
+  width: 100%;
+  min-height: 48px;
+}
+.home-dock__wish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  border: 1.5px dashed #d98970;
+  background: #fffdf8;
+  color: #9a5c48;
+  box-shadow: 2px 3px 0 #f3c7b4;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.home-dock__wish[aria-pressed="true"] {
+  background: #fff6e4;
+  color: #8a7040;
+  border-style: solid;
+  border-color: #b9a36a;
+}
+.add-place-backdrop { background: rgba(60, 42, 36, .28); }
+.add-place-sheet {
+  color: #3c2a24;
+  background: #fffaf4;
+  border: 2px solid #efc3b0;
+  box-shadow: 4px 5px 0 rgba(226, 93, 74, .16);
+}
+.add-place-sheet__handle { background: #f0cdb8; }
+.add-place-sheet__header p { color: #e25d4a; letter-spacing: .18em; }
+.add-place-sheet__header h2 {
+  font-family: "Hannotate SC", "HanziPen SC", "Wawati SC", "Songti SC", serif;
+}
+.sheet-close {
+  color: #9a5c48;
+  background: #fffdf8;
+  border: 1.5px dashed #d98970;
+  box-shadow: 2px 2px 0 #f3c7b4;
+}
+.place-search,
+.date-field input,
+.city-result,
+.visitor-choice {
+  color: #3c2a24;
+  background: #fffdf8;
+  border: 1.5px dashed #d98970;
+  box-shadow: 2px 3px 0 #f3c7b4;
+}
+.place-search > span,
+.city-results__empty,
+.city-result small,
+.visitor-picker legend,
+.date-field > span { color: #8a6a5c; }
+.place-search input { color: #3c2a24; }
+.place-search input::placeholder { color: #b08978; }
+.city-result[aria-pressed="true"],
+.visitor-choice[aria-pressed="true"] {
+  background: #ffe4d6;
+  color: #e25d4a;
+  border-style: solid;
+  border-color: #e25d4a;
+}
+.visitor-choice--rabbit[aria-pressed="true"] { background: #ffe4ea; color: #c43b5a; border-color: #ff6d8f; }
+.visitor-choice--dog[aria-pressed="true"] { background: #e5f6f8; color: #2f7f8c; border-color: #5eb8c8; }
+.visitor-choice--together[aria-pressed="true"] { background: #fff3d6; color: #8a7040; border-color: #e2b656; }
+.city-result__pin {
+  color: #e25d4a;
+  background: #fffaf4;
+  border: 1.5px dashed #d98970;
+  box-shadow: none;
+}
+.date-field input { color-scheme: light; }
+.light-place-button {
+  color: #fff;
+  background: #e25d4a;
+  border: 2px solid #c94b3a;
+  box-shadow: 3px 3px 0 #f0b5a4;
+}
+.sheet-text-button {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: #8a6a5c;
+  font: inherit;
+  cursor: pointer;
+}

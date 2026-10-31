@@ -7,7 +7,6 @@ const FILTERS: Array<{ value: PlaceFilter; label: string }> = [
   { value: 'rabbit', label: '兔子' },
   { value: 'dog', label: '啾啾' },
   { value: 'together', label: '一起' },
-  { value: 'wish', label: '心愿' },
 ]
 
 export interface BottomCardProps {
@@ -15,6 +14,8 @@ export interface BottomCardProps {
   filter: PlaceFilter
   onFilterChange: (filter: PlaceFilter) => void
   onAddPlace: () => void
+  wishlistOpen?: boolean
+  onOpenWishlist?: () => void
   footprintOn?: boolean
   playing?: boolean
   perStop?: number
@@ -28,6 +29,8 @@ export function BottomCard({
   filter,
   onFilterChange,
   onAddPlace,
+  wishlistOpen = false,
+  onOpenWishlist,
   footprintOn = false,
   playing = false,
   perStop = 5,
@@ -67,10 +70,22 @@ export function BottomCard({
         </p>
       )}
 
-      <button type="button" className="home-dock__cta" onClick={onAddPlace}>
-        <IconPlus className="home-dock__cta-icon" />
-        点亮新地方
-      </button>
+      <div className="home-dock__actions">
+        <button type="button" className="home-dock__cta" onClick={onAddPlace}>
+          <IconPlus className="home-dock__cta-icon" />
+          点亮新地方
+        </button>
+        {onOpenWishlist && (
+          <button
+            type="button"
+            className="home-dock__wish"
+            aria-pressed={wishlistOpen}
+            onClick={onOpenWishlist}
+          >
+            心愿单
+          </button>
+        )}
+      </div>
     </section>
   )
 }

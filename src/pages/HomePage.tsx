@@ -8,6 +8,7 @@ import { BottomCard, HomeTopStats } from '../components/BottomCard'
 import { IconCamera, IconSettings } from '../components/icons'
 import { MapView } from '../components/MapView'
 import { PlacePhotoSheet } from '../components/PlacePhotoSheet'
+import { WishSheet } from '../components/WishSheet'
 import { SettingsSheet } from '../components/SettingsSheet'
 import type { CoupleBook, MarkerPack, Member, Place, PlaceFilter } from '../domain/types'
 import { approxPlaceFromLngLat } from '../geo/reverseApprox'
@@ -39,6 +40,7 @@ export function HomePage({
 }: HomePageProps) {
   const [filter, setFilter] = useState<PlaceFilter>(initialFilter)
   const [addPlaceOpen, setAddPlaceOpen] = useState(false)
+  const [wishOpen, setWishOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [initialPlace, setInitialPlace] = useState<PlaceSelection | null>(null)
   const [capturing, setCapturing] = useState(false)
@@ -201,6 +203,7 @@ export function HomePage({
   }
 
   function openAddPlace(place: PlaceSelection | null = null) {
+    setWishOpen(false)
     setInitialPlace(place)
     setAddPlaceOpen(true)
   }
@@ -209,9 +212,12 @@ export function HomePage({
     <main className="home-page">
       <MapView
         places={places}
-        filter={filter}
+        filter={wishOpen ? 'wish' : filter}
         markerPack={markerPack}
-        onPlaceOpen={(place) => setSelectedId(place.id)}
+        onPlaceOpen={(place) => {
+          setWishOpen(false)
+          setSelectedId(place.id)
+        }}
         onMapReady={(map) => {
           mapRef.current = map
           routeRef.current = map ? L.layerGroup().addTo(map) : null
@@ -314,6 +320,11 @@ export function HomePage({
         filter={filter}
         onFilterChange={setFilter}
         onAddPlace={() => openAddPlace(null)}
+        wishlistOpen={wishOpen}
+        onOpenWishlist={() => {
+          setAddPlaceOpen(false)
+          setWishOpen(true)
+        }}
         footprintOn={footprintOn}
         playing={playing}
         perStop={perStop}
@@ -332,11 +343,23 @@ export function HomePage({
       <AddPlaceSheet
         open={addPlaceOpen}
         defaultVisitor="together"
-        memberRole={member?.role}
         initialPlace={initialPlace}
         onClose={() => setAddPlaceOpen(false)}
-        onSubmit={async (hit, visitor, visitedOn, wish) => {
-          await addPlace(hit, visitor, visitedOn, wish)
+        onSubmit={async (hit, visitor, visitedOn) => {
+          await addPlace(hit, visitor, visitedOn)
+        }}
+      />
+      <WishSheet
+        open={wishOpen}
+        places={places}
+        memberRole={member?.role}
+        onClose={() => setWishOpen(false)}
+        onAdd={async (hit, visitor, note) => {
+          await addPlace(hit, visitor, undefined, { note })
+        }}
+        onOpen={(place) => {
+          setWishOpen(false)
+          setSelectedId(place.id)
         }}
       />
     </main>
