@@ -1,9 +1,16 @@
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Onboarding } from './components/Onboarding'
 import { HomePage } from './pages/HomePage'
 import { JoinPage } from './pages/JoinPage'
-import type { Place } from './domain/types'
+import type { Place, Role } from './domain/types'
 import { useBookStore } from './state/bookStore'
+import { SHARED_INVITE_CODE } from './sync/syncEngine'
+
+function requestedRole(): Role | null {
+  const role = new URLSearchParams(window.location.search).get('as')
+  return role === 'rabbit' || role === 'dog' ? role : null
+}
 
 const DEBUG_PLACES: Place[] = [
   {
@@ -51,11 +58,41 @@ function RootPage() {
     places,
     ready,
     createBook,
+    openShared,
     setCurrentBook,
   } = useBookStore()
+  const [enterError, setEnterError] = useState('')
+  const autoRole = requestedRole()
+  const wrongBook = book !== null && book.inviteCode !== SHARED_INVITE_CODE
+  const roleMismatch = autoRole !== null && member !== null && member.role !== autoRole
+  const needShared = (autoRole !== null && book === null) || wrongBook || roleMismatch
+  const sharedRole: Role = autoRole ?? member?.role ?? 'rabbit'
+
+  useEffect(() => {
+    if (!ready || !needShared || enterError) return
+    let cancelled = false
+    void openShared(sharedRole).catch((error: unknown) => {
+      if (cancelled) return
+      setEnterError(error instanceof Error ? error.message : '没能打开你们的地图')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [enterError, needShared, openShared, ready, sharedRole])
 
   if (debugPlaces) return <HomePage places={debugPlaces} />
-  if (!ready) return <main className="app-loading" aria-label="正在加载">✦</main>
+  if (!ready || (needShared && !enterError)) {
+    return <main className="app-loading" aria-label="正在打开你们的地图">✦</main>
+  }
+  if (needShared && enterError) {
+    return (
+      <main className="app-loading" aria-label="没能打开你们的地图">
+        <p>没能打开你们一起的地图。</p>
+        <p>{enterError}</p>
+        <button type="button" onClick={() => setEnterError('')}>再试一次</button>
+      </main>
+    )
+  }
   if (!book || !member) return <Onboarding onCreate={createBook} />
 
   return (

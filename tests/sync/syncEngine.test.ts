@@ -20,6 +20,7 @@ import {
   joinBookRemote,
   mergePlacesByUpdatedAt,
   rebindPlacesToBook,
+  resumeSharedBook,
   RoleTakenError,
   syncNow,
 } from '../../src/sync/syncEngine'
@@ -343,5 +344,83 @@ describe('createBookRemote', () => {
       message: 'member insert failed',
     })
     expect(deleteEq).toHaveBeenCalledWith('id', book.id)
+  })
+})
+
+describe('resumeSharedBook', () => {
+  it('claims the rabbit seat on the shared book and keeps visit dates', async () => {
+    const updates: Array<Record<string, string>> = []
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === 'couple_books') {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn(async () => ({
+                  data: {
+                    id: 'shared-book',
+                    invite_code: 'X5MPHP',
+                    marker_pack: 'stars',
+                    created_at: '2026-08-13T00:00:00.000Z',
+                  },
+                  error: null,
+                })),
+              })),
+            })),
+          }
+        }
+        if (table === 'members') {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(async () => ({
+                data: [{
+                  id: 'rabbit-member',
+                  book_id: 'shared-book',
+                  role: 'rabbit',
+                  device_token: 'old-safari',
+                  joined_at: '2026-08-13T00:00:00.000Z',
+                }],
+                error: null,
+              })),
+            })),
+            update: vi.fn((patch: Record<string, string>) => ({
+              eq: vi.fn(async () => {
+                updates.push(patch)
+                return { error: null }
+              }),
+            })),
+          }
+        }
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(async () => ({
+              data: [{
+                id: 'nanjing',
+                book_id: 'shared-book',
+                place_type: 'city',
+                name: '南京',
+                country_code: 'CN',
+                lat: 32.06,
+                lng: 118.78,
+                visitor: 'together',
+                visited_on: '2019-02-01',
+                updated_at: '2026-08-13T00:00:00.000Z',
+              }],
+              error: null,
+            })),
+          })),
+        }
+      }),
+    }
+    supabaseMocks.getSupabase.mockReturnValue(supabase)
+
+    const result = await resumeSharedBook({ role: 'rabbit', deviceToken: 'this-phone' })
+
+    expect(result.book.inviteCode).toBe('X5MPHP')
+    expect(result.member).toMatchObject({ id: 'rabbit-member', deviceToken: 'this-phone' })
+    expect(updates).toEqual([{ device_token: 'this-phone' }])
+    expect(result.places).toEqual([
+      expect.objectContaining({ name: '南京', visitedOn: '2019-02-01' }),
+    ])
   })
 })

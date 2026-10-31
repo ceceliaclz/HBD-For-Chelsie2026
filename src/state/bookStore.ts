@@ -19,6 +19,7 @@ import {
   pullPlaces,
   pushDirtyPlaces,
   rebindPlacesToBook,
+  resumeSharedBook,
   syncNow,
 } from '../sync/syncEngine'
 import { getSupabase } from '../sync/supabaseClient'
@@ -60,9 +61,30 @@ export async function createCoupleBook(role: Role): Promise<BookSession> {
   }
 
   if (getSupabase()) {
-    await createBookRemote({ book, member })
+    try {
+      await createBookRemote({ book, member })
+    } catch {
+      // Cloud can be down. The map still opens on this device.
+    }
   }
   await saveSession(book, member)
+  return { book, member }
+}
+
+export async function openSharedCoupleBook(role: Role): Promise<BookSession> {
+  const localBook = await loadBook()
+  const localPlaces = await listPlaces()
+  const { book, member, places: remotePlaces } = await resumeSharedBook({
+    role,
+    deviceToken: await getDeviceToken(),
+  })
+  const sameBook = localBook?.id === book.id
+  const nextPlaces = sameBook
+    ? mergePlacesByUpdatedAt(rebindPlacesToBook(localPlaces, book.id), remotePlaces)
+    : remotePlaces
+  if (sameBook) await pushDirtyPlaces(book.id, nextPlaces)
+  await saveSession(book, member)
+  await replaceAllPlaces(nextPlaces)
   return { book, member }
 }
 
@@ -211,6 +233,14 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     return session
   }, [])
 
+  const openShared = useCallback(async (role: Role) => {
+    const session = await openSharedCoupleBook(role)
+    setBook(session.book)
+    setMember(session.member)
+    setPlaces(await listPlaces())
+    return session
+  }, [])
+
   const setCurrentBook = useCallback((nextBook: CoupleBook) => {
     setBook(nextBook)
   }, [])
@@ -225,6 +255,7 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     attachPhotos,
     createBook,
     joinBook,
+    openShared,
     setCurrentBook,
   }
 }

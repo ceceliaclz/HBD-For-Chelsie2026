@@ -19,6 +19,7 @@ const syncMocks = vi.hoisted(() => ({
   pushDirtyPlaces: vi.fn(),
   rebindPlacesToBook: vi.fn((places: Array<Record<string, unknown>>, bookId: string) =>
     places.map((place) => ({ ...place, bookId }))),
+  resumeSharedBook: vi.fn(),
   syncNow: vi.fn(),
 }))
 
@@ -29,7 +30,7 @@ const supabaseMocks = vi.hoisted(() => ({
 vi.mock('../../src/sync/syncEngine', () => syncMocks)
 vi.mock('../../src/sync/supabaseClient', () => supabaseMocks)
 
-import { createCoupleBook, initialSyncStatus, joinCoupleBook } from '../../src/state/bookStore'
+import { createCoupleBook, initialSyncStatus, joinCoupleBook, openSharedCoupleBook } from '../../src/state/bookStore'
 
 beforeEach(async () => {
   await clearAll()
@@ -56,14 +57,15 @@ describe('book onboarding actions', () => {
     expect(await loadMember()).toEqual(result.member)
   })
 
-  it('does not save a local session when configured cloud creation fails', async () => {
+  it('still saves a local rabbit session when cloud creation fails', async () => {
     supabaseMocks.getSupabase.mockReturnValue({})
     syncMocks.createBookRemote.mockRejectedValue(new Error('network unavailable'))
 
-    await expect(createCoupleBook('rabbit')).rejects.toThrow('network unavailable')
+    const result = await createCoupleBook('rabbit')
 
-    expect(await loadBook()).toBeNull()
-    expect(await loadMember()).toBeNull()
+    expect(result.member.role).toBe('rabbit')
+    expect(await loadBook()).toEqual(result.book)
+    expect(await loadMember()).toEqual(result.member)
   })
 
   it('joins remotely, merges local and remote places, then uploads the union', async () => {
@@ -145,5 +147,57 @@ describe('book onboarding actions', () => {
     expect(await loadBook()).toBeNull()
     expect(await loadMember()).toBeNull()
     expect(await listPlaces()).toEqual([localPlace])
+  })
+
+  it('replaces a different local book with the shared cloud places and their dates', async () => {
+    await upsertPlace({
+      id: 'empty-book-place',
+      bookId: 'new-book',
+      placeType: 'city',
+      name: '误开的地图',
+      countryCode: 'CN',
+      lat: 39.9,
+      lng: 116.4,
+      visitor: 'rabbit',
+      updatedAt: '2026-10-31T00:00:00.000Z',
+    })
+    const sharedBook = {
+      id: 'shared-book',
+      inviteCode: 'X5MPHP',
+      markerPack: 'stars' as const,
+      createdAt: '2026-08-13T00:00:00.000Z',
+    }
+    const sharedMember = {
+      id: 'rabbit-member',
+      bookId: sharedBook.id,
+      role: 'rabbit' as const,
+      deviceToken: 'this-device',
+      joinedAt: '2026-08-13T00:00:00.000Z',
+    }
+    syncMocks.resumeSharedBook.mockResolvedValue({
+      book: sharedBook,
+      member: sharedMember,
+      places: [{
+        id: 'nanjing',
+        bookId: sharedBook.id,
+        placeType: 'city',
+        name: '南京',
+        countryCode: 'CN',
+        lat: 32.06,
+        lng: 118.78,
+        visitor: 'together',
+        visitedOn: '2019-02-01',
+        updatedAt: '2026-08-13T00:00:00.000Z',
+      }],
+    })
+
+    const result = await openSharedCoupleBook('rabbit')
+
+    expect(result.book).toEqual(sharedBook)
+    expect(result.member).toEqual(sharedMember)
+    expect(syncMocks.pushDirtyPlaces).not.toHaveBeenCalled()
+    expect(await listPlaces()).toEqual([
+      expect.objectContaining({ name: '南京', visitedOn: '2019-02-01' }),
+    ])
   })
 })

@@ -55,6 +55,71 @@ export class BookFullError extends Error {
   }
 }
 
+export const SHARED_INVITE_CODE = 'X5MPHP'
+
+export async function resumeSharedBook(input: {
+  role: Role
+  deviceToken: string
+}): Promise<{ book: CoupleBook; member: Member; places: Place[] }> {
+  const supabase = getSupabase()
+  if (!supabase) throw new Error('云端还没连上')
+
+  const { data: bookData, error: bookError } = await supabase
+    .from('couple_books')
+    .select('*')
+    .eq('invite_code', SHARED_INVITE_CODE)
+    .maybeSingle()
+  if (bookError) throw bookError
+  if (!bookData) throw new Error('没有找到你们一起的地图')
+
+  const book = toBook(bookData as BookRow)
+  const { data: memberData, error: membersError } = await supabase
+    .from('members')
+    .select('*')
+    .eq('book_id', book.id)
+  if (membersError) throw membersError
+
+  const members = (memberData as MemberRow[]).map(toMember)
+  let seat = members.find((member) => member.role === input.role)
+  const mine = members.find((member) =>
+    member.deviceToken === input.deviceToken && member.id !== seat?.id,
+  )
+
+  if (!seat) {
+    seat = {
+      id: crypto.randomUUID(),
+      bookId: book.id,
+      role: input.role,
+      deviceToken: input.deviceToken,
+      joinedAt: new Date().toISOString(),
+    }
+    const { error } = await supabase.from('members').insert({
+      id: seat.id,
+      book_id: seat.bookId,
+      role: seat.role,
+      device_token: seat.deviceToken,
+      joined_at: seat.joinedAt,
+    })
+    if (error) throw error
+  } else if (seat.deviceToken !== input.deviceToken) {
+    if (mine) {
+      const { error } = await supabase
+        .from('members')
+        .update({ device_token: crypto.randomUUID() })
+        .eq('id', mine.id)
+      if (error) throw error
+    }
+    const { error } = await supabase
+      .from('members')
+      .update({ device_token: input.deviceToken })
+      .eq('id', seat.id)
+    if (error) throw error
+    seat = { ...seat, deviceToken: input.deviceToken }
+  }
+
+  return { book, member: seat, places: await pullPlaces(book.id) }
+}
+
 function toBook(row: BookRow): CoupleBook {
   return {
     id: row.id,

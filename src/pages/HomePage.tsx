@@ -60,7 +60,7 @@ export function HomePage({
   const syncStatusText = {
     synced: '已同步',
     offline: '离线 · 本地已保存',
-    failed: '同步遇到问题 · 足迹仍在本机',
+    failed: '这次没写上云端',
   }[syncStatus]
 
   async function handleCapture() {

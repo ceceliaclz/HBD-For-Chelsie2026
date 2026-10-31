@@ -86,20 +86,21 @@ function escapeHtml(value: string): string {
 
 export function placeMarkerHtml(place: Place): { html: string; iconSize: [number, number]; iconAnchor: [number, number] } {
   const label = escapeHtml(markerLabel(place))
+  const when = place.visitedOn ? `<span class="pin__date">${escapeHtml(place.visitedOn)}</span>` : ''
   const color = VISITOR_PIN[place.visitor]
   const photos = place.photos ?? []
   if (!photos.length) {
     return {
-      html: `<div class="pin pin--empty" style="--pin:${color}"><span class="pin__mark">待添加</span><span class="pin__name">${label}</span></div>`,
-      iconSize: [72, 58],
-      iconAnchor: [36, 28],
+      html: `<div class="pin pin--empty" style="--pin:${color}"><span class="pin__mark">待添加</span><span class="pin__name">${label}${when}</span></div>`,
+      iconSize: [96, when ? 76 : 58],
+      iconAnchor: [48, when ? 38 : 28],
     }
   }
   const shot = escapeHtml(photos[0])
   return {
-    html: `<div class="pin pin--photo" style="--pin:${color}"><span class="pin__tape"></span><span class="pin__shot" style="background-image:url('${shot}')"></span><span class="pin__count">${photos.length}</span><span class="pin__name">${label}</span></div>`,
-    iconSize: [78, 108],
-    iconAnchor: [32, 86],
+    html: `<div class="pin pin--photo" style="--pin:${color}"><span class="pin__tape"></span><span class="pin__shot" style="background-image:url('${shot}')"></span><span class="pin__count">${photos.length}</span><span class="pin__name">${label}${when}</span></div>`,
+    iconSize: [96, when ? 126 : 108],
+    iconAnchor: [40, when ? 104 : 86],
   }
 }
 
