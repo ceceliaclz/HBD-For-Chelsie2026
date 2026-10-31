@@ -11,6 +11,7 @@ import {
   replaceAllPlaces,
   saveSession,
   upsertPlace,
+  writePlace,
 } from '../storage/localDb'
 import {
   createBookRemote,
@@ -87,6 +88,15 @@ export async function openSharedCoupleBook(role: Role): Promise<BookSession> {
   await saveSession(book, member)
   await replaceAllPlaces(nextPlaces)
   return { book, member }
+}
+
+export async function changePlaceVisitedOn(placeId: string, visitedOn: string): Promise<Place | null> {
+  const current = (await listPlaces()).find((place) => place.id === placeId)
+  if (!current) return null
+  const next: Place = { ...current, updatedAt: new Date().toISOString() }
+  if (visitedOn) next.visitedOn = visitedOn
+  else delete next.visitedOn
+  return writePlace(next)
 }
 
 export async function joinCoupleBook(code: string, role: Role): Promise<BookSession> {
@@ -219,6 +229,12 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     setPlaces(await listPlaces())
   }, [])
 
+  const updateVisitedOn = useCallback(async (placeId: string, visitedOn: string) => {
+    await changePlaceVisitedOn(placeId, visitedOn)
+    setPlaces(await listPlaces())
+    await runSync()
+  }, [runSync])
+
   const createBook = useCallback(async (role: Role) => {
     const session = await createCoupleBook(role)
     setBook(session.book)
@@ -254,6 +270,7 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
     syncStatus,
     addPlace,
     attachPhotos,
+    updateVisitedOn,
     createBook,
     joinBook,
     openShared,

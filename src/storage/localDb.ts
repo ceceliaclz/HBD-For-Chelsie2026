@@ -95,6 +95,12 @@ export async function upsertPlace(incoming: Place): Promise<Place> {
   return incoming
 }
 
+export async function writePlace(place: Place): Promise<Place> {
+  const db = await getDb()
+  await db.put('places', place)
+  return place
+}
+
 export async function listPlaces(): Promise<Place[]> {
   const db = await getDb()
   return db.getAll('places')

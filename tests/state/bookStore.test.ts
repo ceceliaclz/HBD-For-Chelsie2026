@@ -32,7 +32,7 @@ const supabaseMocks = vi.hoisted(() => ({
 vi.mock('../../src/sync/syncEngine', () => syncMocks)
 vi.mock('../../src/sync/supabaseClient', () => supabaseMocks)
 
-import { createCoupleBook, initialSyncStatus, joinCoupleBook, openSharedCoupleBook } from '../../src/state/bookStore'
+import { createCoupleBook, changePlaceVisitedOn, initialSyncStatus, joinCoupleBook, openSharedCoupleBook } from '../../src/state/bookStore'
 
 beforeEach(async () => {
   await clearAll()
@@ -260,5 +260,28 @@ describe('book onboarding actions', () => {
     expect(await listPlaces()).toEqual([
       expect.objectContaining({ name: '美国', visitedOn: '2024-07-04' }),
     ])
+  })
+
+  it('lets a saved visit date be changed or cleared', async () => {
+    await upsertPlace({
+      id: 'los-angeles',
+      bookId: 'shared-book',
+      placeType: 'city',
+      name: '洛杉矶',
+      countryCode: 'US',
+      lat: 34.05,
+      lng: -118.24,
+      visitor: 'together',
+      visitedOn: '2026-10-01',
+      updatedAt: '2026-10-12T00:00:00.000Z',
+    })
+
+    await changePlaceVisitedOn('los-angeles', '2026-10-04')
+    expect(await listPlaces()).toEqual([
+      expect.objectContaining({ name: '洛杉矶', visitedOn: '2026-10-04' }),
+    ])
+
+    await changePlaceVisitedOn('los-angeles', '')
+    expect((await listPlaces())[0]?.visitedOn).toBeUndefined()
   })
 })

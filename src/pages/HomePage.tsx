@@ -52,7 +52,7 @@ export function HomePage({
   const mapRef = useRef<LeafletMap | null>(null)
   const routeRef = useRef<L.LayerGroup | null>(null)
   const playToken = useRef(0)
-  const { places, addPlace, attachPhotos, syncStatus } = useBookStore(initialPlaces, {
+  const { places, addPlace, attachPhotos, updateVisitedOn, syncStatus } = useBookStore(initialPlaces, {
     syncLifecycle: true,
   })
   const selected = places.find((place) => place.id === selectedId) ?? null
@@ -299,6 +299,9 @@ export function HomePage({
           onClose={() => setSelectedId(null)}
           onAddPhotos={(files) => {
             void filesToPhotoUrls(files).then((urls) => attachPhotos(selected.id, urls))
+          }}
+          onVisitedOnChange={(visitedOn) => {
+            void updateVisitedOn(selected.id, visitedOn)
           }}
         />
       )}
