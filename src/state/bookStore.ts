@@ -162,9 +162,9 @@ export function useBookStore(initialPlaces?: Place[], options: BookStoreOptions 
   }, [])
 
   useEffect(() => {
-    if (!options.syncLifecycle || !ready || !book || !member) return
+    if (!options.syncLifecycle || !ready) return
     void runSync()
-  }, [book, member, options.syncLifecycle, ready, runSync])
+  }, [options.syncLifecycle, ready, runSync])
 
   useEffect(() => {
     if (!options.syncLifecycle) return
