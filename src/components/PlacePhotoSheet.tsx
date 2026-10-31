@@ -71,9 +71,9 @@ export function PlacePhotoSheet({
       {photos.length === 0 ? (
         <p className="place-sheet__empty">待添加</p>
       ) : (
-        <div className="place-sheet__film">
-          {photos.map((photo) => (
-            <img key={photo.slice(-24)} src={photo} alt="" />
+        <div className={photos.length > 1 ? 'place-sheet__pile' : 'place-sheet__film'} aria-label={`${photos.length} 张照片`}>
+          {photos.map((photo, index) => (
+            <img key={`${index}-${photo.slice(-24)}`} src={photo} alt="" />
           ))}
         </div>
       )}

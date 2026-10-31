@@ -97,11 +97,23 @@ export function placeMarkerHtml(place: Place): { html: string; iconSize: [number
       iconAnchor: [48, when ? 38 : 28],
     }
   }
-  const shot = escapeHtml(photos[0])
+  const visible = photos.slice(0, 3)
+  const layerClass = (index: number) => {
+    if (visible.length === 1) return 'pin__shot'
+    if (visible.length === 2) return index === 0 ? 'pin__shot pin__shot--back' : 'pin__shot pin__shot--front'
+    return `pin__shot ${['pin__shot--back', 'pin__shot--mid', 'pin__shot--front'][index]}`
+  }
+  const shots = visible.map((photo, index) => (
+    `<span class="${layerClass(index)}" style="background-image:url('${escapeHtml(photo)}')"></span>`
+  )).join('')
+  const stacked = visible.length > 1
+  const count = photos.length > visible.length
+    ? `<span class="pin__count">${photos.length}</span>`
+    : ''
   return {
-    html: `<div class="pin pin--photo" style="--pin:${color}"><span class="pin__tape"></span><span class="pin__shot" style="background-image:url('${shot}')"></span><span class="pin__count">${photos.length}</span><span class="pin__name">${label}${when}</span></div>`,
-    iconSize: [96, when ? 126 : 108],
-    iconAnchor: [40, when ? 104 : 86],
+    html: `<div class="pin pin--photo${stacked ? ' pin--stack' : ''}" style="--pin:${color}">${shots}<span class="pin__tape"></span>${count}<span class="pin__name">${label}${when}</span></div>`,
+    iconSize: stacked ? [112, when ? 148 : 128] : [96, when ? 126 : 108],
+    iconAnchor: stacked ? [52, when ? 124 : 104] : [40, when ? 104 : 86],
   }
 }
 

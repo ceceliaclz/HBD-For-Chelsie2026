@@ -509,6 +509,7 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 .leaflet-div-icon.city-marker-wrap {
   background: transparent !important;
   border: none !important;
+  overflow: visible !important;
 }
 
 .home-page .city-marker-wrap {
@@ -969,19 +970,24 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 }
 .pin__date { display: block; margin-top: 1px; color: #8a6a5c; font-size: 11px; font-weight: 600; }
 .pin--photo { width: 78px; height: 108px; }
-.pin__tape { position: absolute; left: 18px; top: 2px; z-index: 2; width: 28px; height: 10px; background: rgba(255, 206, 120, .85); }
+.pin--stack { width: 112px; height: 118px; }
+.pin__tape { position: absolute; left: 22px; top: 4px; z-index: 4; width: 28px; height: 10px; background: rgba(255, 206, 120, .85); }
 .pin__shot {
-  position: absolute; left: 2px; top: 8px; width: 58px; height: 64px;
+  position: absolute; left: 18px; top: 10px; z-index: 2; width: 58px; height: 64px;
   border: 3px solid #fff; border-bottom-width: 12px; border-radius: 4px;
   background: #fff center/cover no-repeat; box-shadow: 0 8px 14px rgba(90, 40, 20, .22);
 }
+.pin__shot--back { left: 0; top: 18px; z-index: 0; transform: rotate(-12deg); }
+.pin__shot--mid { left: 40px; top: 6px; z-index: 1; transform: rotate(9deg); }
+.pin__shot--front { z-index: 3; }
 .pin__count {
-  position: absolute; right: 0; top: 6px; z-index: 3; min-width: 18px; height: 18px;
+  position: absolute; right: 0; top: 0; z-index: 5; min-width: 18px; height: 18px;
   display: flex; align-items: center; justify-content: center;
   border-radius: 9px; border: 2px solid #fff; background: #e25d4a; color: #fff;
   font-size: 11px; font-weight: 700; line-height: 1;
 }
-.pin--photo .pin__name { position: absolute; left: 50%; top: 78px; margin-top: 0; transform: translateX(-50%); }
+.pin--photo .pin__name { position: absolute; left: 50%; top: 86px; margin-top: 0; transform: translateX(-50%); }
+.pin--stack .pin__name { top: 96px; }
 .place-sheet, .memory-card {
   position: absolute; z-index: 5; left: 12px; right: 12px;
   background: #fffaf4; border: 2px solid #efc3b0; border-radius: 28px;
@@ -993,6 +999,30 @@ html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(-
 .place-sheet__grab { width: 42px; height: 6px; margin: 6px auto 12px; border-radius: 3px; background: #f0cdb8; }
 .place-sheet__film { display: flex; gap: 8px; overflow: auto; padding: 8px 0; }
 .place-sheet__film img { width: 72px; height: 72px; object-fit: cover; border: 3px solid #fff; border-radius: 14px; }
+.place-sheet__pile {
+  display: flex;
+  align-items: flex-end;
+  height: 118px;
+  margin: 8px 0 4px;
+  overflow-x: auto;
+  padding: 18px 16px 8px;
+}
+.place-sheet__pile img {
+  flex: 0 0 auto;
+  width: 68px;
+  height: 80px;
+  object-fit: cover;
+  margin-left: -36px;
+  border: 3px solid #fff;
+  border-bottom-width: 14px;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 2px 8px 14px rgba(90, 40, 20, .22);
+}
+.place-sheet__pile img:first-child { margin-left: 0; }
+.place-sheet__pile img:nth-child(3n+1) { transform: rotate(-8deg); }
+.place-sheet__pile img:nth-child(3n+2) { transform: rotate(7deg); }
+.place-sheet__pile img:nth-child(3n) { transform: rotate(-2deg); }
 .place-sheet__add { margin-top: 8px; width: 100%; background: #e25d4a; color: #fff; border-style: solid; border-color: #c94b3a; font-weight: 700; }
 .place-sheet__add:disabled { opacity: 0.45; }
 .place-sheet__add input { display: none; }
