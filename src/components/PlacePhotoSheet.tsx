@@ -6,7 +6,6 @@ import { isWish, wishMark } from '../domain/wishes'
 interface DraftPhoto {
   file: File
   url: string
-  picked: boolean
 }
 
 export function PlacePhotoSheet({
@@ -26,8 +25,6 @@ export function PlacePhotoSheet({
   const [drafts, setDrafts] = useState<DraftPhoto[]>([])
   const draftsRef = useRef(drafts)
   draftsRef.current = drafts
-  const pickedCount = drafts.filter((draft) => draft.picked).length
-
   useEffect(() => () => {
     draftsRef.current.forEach((draft) => URL.revokeObjectURL(draft.url))
   }, [])
@@ -39,19 +36,12 @@ export function PlacePhotoSheet({
       ...files.map((file) => ({
         file,
         url: URL.createObjectURL(file),
-        picked: false,
       })),
     ])
   }
 
-  function toggleDraft(url: string) {
-    setDrafts((current) => current.map((draft) => (
-      draft.url === url ? { ...draft, picked: !draft.picked } : draft
-    )))
-  }
-
   function confirmDrafts() {
-    const files = drafts.filter((draft) => draft.picked).map((draft) => draft.file)
+    const files = drafts.map((draft) => draft.file)
     drafts.forEach((draft) => URL.revokeObjectURL(draft.url))
     setDrafts([])
     if (files.length) onAddPhotos(files)
@@ -98,29 +88,15 @@ export function PlacePhotoSheet({
         </div>
       )}
       {drafts.length > 0 && (
-        <div className="photo-picks" aria-label="点选要留下的照片">
-          <p>点一下要留下的，再添加</p>
+        <div className="photo-picks" aria-label="即将添加的照片">
+          <p>已从相册选好 {drafts.length} 张</p>
           <div>
             {drafts.map((draft) => (
-              <button
-                key={draft.url}
-                type="button"
-                className="photo-pick"
-                aria-pressed={draft.picked}
-                onClick={() => toggleDraft(draft.url)}
-              >
-                <img src={draft.url} alt="" />
-                <span>{draft.picked ? '已选' : '点选'}</span>
-              </button>
+              <img key={draft.url} src={draft.url} alt="" />
             ))}
           </div>
-          <button
-            type="button"
-            className="place-sheet__add"
-            disabled={pickedCount === 0}
-            onClick={confirmDrafts}
-          >
-            添加选中的 {pickedCount} 张
+          <button type="button" className="place-sheet__add" onClick={confirmDrafts}>
+            确认添加
           </button>
         </div>
       )}

@@ -181,26 +181,18 @@ await withChrome(async (http) => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'files').set.call(input, data.files)
       input.dispatchEvent(new Event('change', { bubbles: true }))
       await new Promise((resolve) => setTimeout(resolve, 200))
-      const pick = document.querySelector('.photo-pick')
-      const addButton = () => [...document.querySelectorAll('button.place-sheet__add')].find((el) => (el.textContent || '').includes('添加选中的'))
-      const before = {
-        pressed: pick ? pick.getAttribute('aria-pressed') : null,
-        disabled: addButton() ? addButton().disabled : null,
-        film: document.querySelectorAll('.place-sheet__film img').length,
-      }
-      if (pick) pick.click()
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      const afterPick = document.querySelector('.photo-pick')
-      const after = {
-        pressed: afterPick ? afterPick.getAttribute('aria-pressed') : null,
-        disabled: addButton() ? addButton().disabled : null,
-      }
+      const addButton = [...document.querySelectorAll('button.place-sheet__add')].find((el) => (el.textContent || '').includes('确认添加'))
+      const preview = document.querySelectorAll('.photo-picks img').length
+      const film = document.querySelectorAll('.place-sheet__film img, .place-sheet__pile img').length
       const close = document.querySelector('.place-sheet__close')
       if (close) close.click()
-      return { staged: Boolean(pick), before, after }
+      return {
+        staged: preview > 0,
+        canConfirm: Boolean(addButton && addButton.disabled === false),
+        film,
+      }
     })()`)
-    note('照片先是未选中，确认按钮不能点', photos.staged && photos.before.pressed === 'false' && photos.before.disabled === true && photos.before.film === 0)
-    note('点一下之后才变成已选', photos.staged && photos.after.pressed === 'true' && photos.after.disabled === false)
+    note('相册选完可以直接确认添加', photos.staged && photos.canConfirm && photos.film === 0)
   } finally {
     page.close()
   }
